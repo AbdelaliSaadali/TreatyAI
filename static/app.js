@@ -167,6 +167,12 @@ async function loadDecision() {
     const data = await api("/api/scenarios");
     state.scenarios = data.scenarios || [];
   }
+  if (!state.decision) {
+    const history = await api("/api/decisions?limit=30");
+    state.decision = (history.decisions || []).find(function (item) {
+      return item.scenario_id === state.selectedScenario;
+    }) || null;
+  }
   renderDecision();
 }
 async function runScenario() {
@@ -320,7 +326,7 @@ document.addEventListener("click", async function (event) {
   if (nav) { setView(nav.dataset.view); return; }
   if (event.target.closest("[data-go-decision]")) { setView("decision"); return; }
   const select = event.target.closest("[data-select-scenario]");
-  if (select) { state.selectedScenario = select.dataset.selectScenario; state.decision = null; renderDecision(); return; }
+  if (select) { state.selectedScenario = select.dataset.selectScenario; state.decision = null; loadDecision(); return; }
   if (event.target.closest("[data-run-selected]")) { runScenario(); return; }
   if (event.target.closest("[data-run-race]")) { runRace(); return; }
   if (event.target.closest("[data-reset]")) { resetDemo(); return; }

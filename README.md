@@ -36,6 +36,8 @@ The following are simulated or future integration work:
 
 This separation is intentional: the core safety mechanism is testable without a Salesforce account or external credentials.
 
+The generic POST /api/decisions/coordinate endpoint accepts validated DecisionBatch requests, making it a real HTTP integration boundary rather than a mock-only scenario route. See SALESFORCE_INTEGRATION.md for the proposed Agentforce adapter and BENCHMARK_METHODOLOGY.md for the exact interpretation of benchmark results.
+
 ## Quick start
 
 Requirements: Python 3.10+, and the packages in requirements.txt.
@@ -136,6 +138,8 @@ The test suite covers:
     ├── run.sh
     ├── ARCHITECTURE.md
     ├── THREAT_MODEL.md
+    ├── SALESFORCE_INTEGRATION.md
+    ├── BENCHMARK_METHODOLOGY.md
     └── DEMO_SCRIPT.md
 
 ## Design principles
