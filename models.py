@@ -62,3 +62,13 @@ class DecisionContract(BaseModel):
 
     def public_dict(self) -> dict[str, Any]:
         return self.model_dump(mode="json")
+
+
+class DecisionBatch(BaseModel):
+    """External adapter envelope for one coordinated multi-agent decision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    scenario_id: str = Field(min_length=3, max_length=64)
+    customer_id: str = Field(min_length=3, max_length=64)
+    proposals: list[DecisionContract] = Field(min_length=1, max_length=20)

@@ -5,6 +5,7 @@ import unittest
 from fastapi.testclient import TestClient
 import db
 from main import app
+from engine import make_proposal
 
 
 class ApiIntegrationTests(unittest.TestCase):
@@ -36,6 +37,25 @@ class ApiIntegrationTests(unittest.TestCase):
             audit = client.get("/api/audit/verify").json()
             self.assertTrue(audit["valid"])
             self.assertGreaterEqual(audit["events_verified"], 3)
+
+    def test_generic_agent_adapter_contract_and_replay_protection(self):
+        with TestClient(app) as client:
+            customer = db.get_customer("C-1043")
+            proposal = make_proposal(
+                "EXT-CALLBACK-01", "retention-agent", "C-1043",
+                "schedule_callback", channel="phone", utility=65,
+                expected_state_version=customer["state_version"],
+            )
+            payload = {
+                "scenario_id": "external-adapter-demo",
+                "customer_id": "C-1043",
+                "proposals": [proposal.public_dict()],
+            }
+            first = client.post("/api/decisions/coordinate", json=payload)
+            self.assertEqual(first.status_code, 200)
+            self.assertEqual(first.json()["status"], "committed")
+            replay = client.post("/api/decisions/coordinate", json=payload)
+            self.assertEqual(replay.status_code, 409)
 
     def test_concurrency_and_benchmark_endpoints(self):
         with TestClient(app) as client:

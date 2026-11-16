@@ -145,4 +145,4 @@ For the hackathon use case, this keeps the implementation understandable and fas
 
 ## 8. Integration boundary
 
-The FastAPI endpoints and Decision Contract provide a future adapter boundary. A Salesforce implementation can expose TreatyAI operations as Agentforce actions, but this repository currently has no Salesforce credentials or live adapter. No external action is sent from the prototype.
+The generic POST /api/decisions/coordinate endpoint accepts a DecisionBatch containing one customer identifier and 1–20 validated agent proposals. This is the integration boundary for a future Salesforce adapter: an Agentforce action can submit its proposal batch, then consume the verified decision and receipt. This repository currently has no Salesforce credentials or live adapter. No external action is sent from the prototype.

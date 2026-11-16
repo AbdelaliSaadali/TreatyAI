@@ -309,6 +309,7 @@ async function renderCurrent() {
 }
 async function setView(view) {
   state.view = view;
+  if (window.location.hash !== "#" + view) window.history.replaceState(null, "", "#" + view);
   $$(".nav-item").forEach(function (item) { item.classList.toggle("active", item.dataset.view === view); });
   $("#app-content").innerHTML = '<div class="loading-state"><div class="loader"></div><span>Loading ' + esc(view) + '…</span></div>';
   try { await renderCurrent(); }
@@ -344,7 +345,9 @@ async function boot() {
     await api("/api/health");
     state.overview = await api("/api/overview");
     state.scenarios = (await api("/api/scenarios")).scenarios;
-    await setView("overview");
+    const requestedView = window.location.hash.replace("#", "");
+    const validViews = ["overview", "decision", "receipts", "policies", "benchmark"];
+    await setView(validViews.includes(requestedView) ? requestedView : "overview");
   } catch (error) {
     $("#app-content").innerHTML = '<div class="empty-state">TreatyAI API is not reachable. Start the local server with <code>./run.sh</code> and refresh this page.<br><br>' + esc(error.message) + '</div>';
   }

@@ -87,6 +87,7 @@ Use **Reset demo** before repeating the flagship scenario. Reset restores the sy
 | GET | /api/policies | Versioned policy registry |
 | GET | /api/scenarios | Available synthetic scenarios |
 | POST | /api/scenarios/{id}/run | Prepare, verify and commit a scenario |
+| POST | /api/decisions/coordinate | Accept a validated external agent proposal batch |
 | POST | /api/demo/reset | Restore demo customer state |
 | POST | /api/concurrency/run | Run the simultaneous shared-budget test |
 | POST | /api/bench/run | Execute 30 TreatyBench cases |
@@ -94,6 +95,7 @@ Use **Reset demo** before repeating the flagship scenario. Reset restores the sy
 | GET | /api/decisions | List decision records |
 | GET | /api/decisions/{id} | Retrieve a complete decision |
 | GET | /api/receipts | List decision receipts |
+| GET | /api/receipts/{id}/verify | Verify one receipt and its audit-chain anchor |
 | GET | /api/events | Read audit events and integrity status |
 | GET | /api/audit/verify | Verify the event hash chain |
 
@@ -127,7 +129,8 @@ The test suite covers:
     │   ├── styles.css          # Responsive dashboard styling
     │   └── app.js              # Browser interactions and API client
     ├── tests/
-    │   └── test_engine.py      # Engine, persistence and concurrency tests
+    │   ├── test_engine.py     # Engine, persistence and concurrency tests
+    │   └── test_api.py        # FastAPI integration and adapter replay tests
     ├── data/                   # Local SQLite database (git-ignored)
     ├── requirements.txt
     ├── run.sh

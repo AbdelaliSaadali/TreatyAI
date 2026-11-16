@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 import db
 from engine import AGENTS, POLICY_VERSION, build_decision, customer_journey_proposals, consent_violation_proposals, make_proposal, run_benchmark
-from models import DecisionContract
+from models import DecisionBatch, DecisionContract
 
 
 ROOT = Path(__file__).resolve().parent
@@ -209,6 +209,21 @@ def benchmark() -> dict[str, Any]:
 def latest_benchmark() -> dict[str, Any]:
     result = db.latest_benchmark()
     return result or {"available": False}
+
+
+
+
+@app.post("/api/decisions/coordinate")
+def coordinate(batch: DecisionBatch) -> dict[str, Any]:
+    """Accept a batch of agent intents through the future integration boundary."""
+    customer = db.get_customer(batch.customer_id)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    preview = build_decision(batch.scenario_id, customer, batch.proposals)
+    try:
+        return db.create_decision(batch.scenario_id, batch.customer_id, preview, commit_actions=True)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
 
 
 @app.get("/api/decisions")
