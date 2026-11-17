@@ -1,0 +1,11 @@
+{
+  "release": "v0.3.0",
+  "created_at_utc": "2026-11-17T17:13:32.120403+00:00",
+  "salesforce_deployed": false,
+  "live_groq_verified": false,
+  "crm_data": "synthetic-only",
+  "exposed_credentials": false,
+  "deployment_mode": "local-loopback",
+  "integration_auth": "separate bearer token, disabled until configured",
+  "external_side_effects": false
+}

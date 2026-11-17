@@ -1,6 +1,6 @@
 # TreatyAI
 
-**Cross-Agent Decision Governance & Verified Execution**
+**Cross-Agent Decision Governance & Verified Execution — v0.3.0**
 
 > Many agents. One governed outcome.
 
@@ -11,10 +11,10 @@ It is designed as a governance layer that can complement an orchestrator such as
 ## What is implemented
 
 - **Decision Contracts** — validated, bounded action proposals with agent identity, delegated action, customer, amount, priority, evidence, idempotency key and expected customer-state version.
-- **Conflict Graph** — pairwise relationships for shared compensation budgets, customer-journey precedence and outbound contact contention.
+- **Conflict Graph** — pairwise and cumulative shared compensation conflicts, customer-journey precedence and outbound contact contention.
 - **Deterministic Policy Engine** — delegated scopes, per-agent monetary limits, customer consent, critical-case precedence, contact-frequency limits and human-approval boundaries.
 - **Constrained Resolution** — bounded beam search over full and partial action variants. Hard constraints are never traded for utility.
-- **Independent Verifier** — recomputes authority, budget, consent, contact and idempotency checks from the selected plan.
+- **Independent Verifier** — separate verifier.py module independently recomputes scopes, authorization, amount variants, plan totals, scores, consent, contact and idempotency; it rejects forged plans.
 - **Transactional Commit** — SQLite BEGIN IMMEDIATE, guarded state updates, state-version checks and re-evaluation of stale proposals.
 - **Idempotency Protection** — processed proposal keys are recorded and replays are rejected.
 - **Decision Receipts** — evidence-linked outcomes, policy/engine versions, verification results and SHA-256 receipt hashes.
@@ -41,7 +41,7 @@ The following are synthetic or future work:
 
 This separation is intentional: the core safety mechanism is testable without a Salesforce account or external credentials.
 
-The generic POST /api/decisions/coordinate endpoint accepts validated DecisionBatch requests, making it a real HTTP integration boundary rather than a mock-only scenario route. See SALESFORCE_INTEGRATION.md for the proposed Agentforce adapter and BENCHMARK_METHODOLOGY.md for the exact interpretation of benchmark results.
+The POST /api/decisions/coordinate endpoint accepts validated DecisionBatch requests, but requires a distinct TREATYAI_INTEGRATION_TOKEN bearer credential (at least 32 characters) and is disabled by default; this is not production agent identity proof. See SALESFORCE_INTEGRATION.md for the proposed Agentforce adapter and BENCHMARK_METHODOLOGY.md for the exact interpretation of benchmark results.
 
 ## Quick start
 
@@ -109,7 +109,7 @@ Use **Reset demo** before repeating the flagship scenario. Reset restores the sy
 | GET | /api/policies | Versioned policy registry |
 | GET | /api/scenarios | Available synthetic scenarios |
 | POST | /api/scenarios/{id}/run | Prepare, verify and commit a scenario |
-| POST | /api/decisions/coordinate | Accept a validated external agent proposal batch |
+| POST | /api/decisions/coordinate | Authenticated service-token-only external agent batch; disabled until configured |
 | POST | /api/demo/reset | Restore demo customer state |
 | POST | /api/concurrency/run | Run the simultaneous shared-budget test |
 | POST | /api/bench/run | Execute 30 TreatyBench cases |
@@ -126,6 +126,12 @@ FastAPI's OpenAPI UI is available at /api/docs.
 ## Run the tests
 
     python3 -m unittest discover -s tests -v
+
+Optional visual end-to-end smoke test on a Mac with Brave and Playwright already installed (no installation is performed):
+
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/browser_smoke.py
+
+The Python test suite also includes 180 deterministic randomized policy cases, 45 exhaustive small-case optimization comparisons, falsified-plan rejection, HTTP bearer authorization and truncated provider replies.
 
 The test suite covers:
 
@@ -145,6 +151,7 @@ The test suite covers:
     ├── main.py                 # FastAPI routes and local orchestration
     ├── models.py               # Decision Contract schema and validation
     ├── engine.py               # Conflict graph, policy checks, optimizer, verifier, benchmark
+    ├── verifier.py             # Separate independent plan-integrity / policy verifier
     ├── groq_provider.py        # Structured Groq HTTP client, no extra SDK
     ├── live_agents.py          # Multi-agent inference, mediation and counteroffers
     ├── credential_store.py     # macOS Keychain local credential setup
@@ -156,7 +163,9 @@ The test suite covers:
     ├── tests/
     │   ├── test_engine.py     # Engine, persistence and concurrency tests
     │   ├── test_api.py        # FastAPI integration and adapter replay tests
-    │   └── test_live_agents.py # LLM orchestration, prompt boundary and provider-mock tests
+    │   ├── test_live_agents.py # LLM orchestration, prompt boundary and provider-mock tests
+    │   ├── test_safety_properties.py # Randomized policy + exhaustive oracle checks
+    │   └── browser_smoke.py    # Optional isolated desktop/mobile Brave smoke test
     ├── data/                   # Local SQLite database (git-ignored)
     ├── requirements.txt
     ├── run.sh
@@ -164,6 +173,8 @@ The test suite covers:
     ├── THREAT_MODEL.md
     ├── SALESFORCE_INTEGRATION.md
     ├── GROQ_INTEGRATION.md
+    ├── handoff/               # Generated OpenAPI + verified request/response fixtures
+    ├── scripts/build_handoff.py  # Offline source + Salesforce ZIP builder
     ├── salesforce/              # Salesforce DX / Apex source scaffold, not deployed
     ├── BENCHMARK_METHODOLOGY.md
     └── DEMO_SCRIPT.md
@@ -184,7 +195,7 @@ The test suite covers:
 - The SQLite transaction demonstrates single-database serialization. It is not a distributed transaction across Salesforce and external providers.
 - Hash chaining makes accidental or unsophisticated modification detectable; it is not a digital signature or protection against an attacker who can rewrite the database and recompute the chain.
 - The current benchmark validates the encoded synthetic scenarios, not production performance or arbitrary agent systems.
-- The demo does not provide tenant isolation, production authentication, downstream external action dispatch, or operational monitoring. Groq credentials are stored in macOS Keychain for local development only.
+- The local demo does not provide tenant isolation, end-user authentication, downstream external action dispatch, or operational monitoring. The external decision intake has a separate service bearer gate but does not authenticate individual agent identities. Groq credentials are stored in macOS Keychain for local development only.
 
 ## Roadmap
 

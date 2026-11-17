@@ -1,0 +1,898 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TreatyAI Decision Governance API",
+    "description": "Cross-agent decision governance, constrained resolution and verified execution.",
+    "version": "0.3.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Api Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "summary": "Overview",
+        "operationId": "overview_api_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Overview Api Overview Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents": {
+      "get": {
+        "summary": "Agents",
+        "operationId": "agents_api_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Agents Api Agents Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/policies": {
+      "get": {
+        "summary": "Policies",
+        "operationId": "policies_api_policies_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Policies Api Policies Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/status": {
+      "get": {
+        "summary": "Ai Status",
+        "operationId": "ai_status_api_ai_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Ai Status Api Ai Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/configure": {
+      "post": {
+        "summary": "Ai Configure",
+        "description": "One-time loopback-only Keychain setup; never returns or logs the key.",
+        "operationId": "ai_configure_api_ai_configure_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroqCredentialInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Ai Configure Api Ai Configure Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/run": {
+      "post": {
+        "summary": "Ai Run",
+        "description": "Real Groq specialists -> mediator -> counteroffers -> independent verifier.",
+        "operationId": "ai_run_api_ai_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Ai Run Api Ai Run Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios": {
+      "get": {
+        "summary": "Scenarios",
+        "operationId": "scenarios_api_scenarios_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Scenarios Api Scenarios Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{scenario_id}/run": {
+      "post": {
+        "summary": "Run Scenario",
+        "operationId": "run_scenario_api_scenarios__scenario_id__run_post",
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Run Scenario Api Scenarios  Scenario Id  Run Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/reset": {
+      "post": {
+        "summary": "Reset Demo",
+        "operationId": "reset_demo_api_demo_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Reset Demo Api Demo Reset Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/concurrency/run": {
+      "post": {
+        "summary": "Run Concurrency",
+        "operationId": "run_concurrency_api_concurrency_run_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Run Concurrency Api Concurrency Run Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bench/run": {
+      "post": {
+        "summary": "Benchmark",
+        "operationId": "benchmark_api_bench_run_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Benchmark Api Bench Run Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bench/latest": {
+      "get": {
+        "summary": "Latest Benchmark",
+        "operationId": "latest_benchmark_api_bench_latest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Latest Benchmark Api Bench Latest Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/decisions/coordinate": {
+      "post": {
+        "summary": "Coordinate",
+        "description": "Accept a batch of agent intents through the future integration boundary.",
+        "operationId": "coordinate_api_decisions_coordinate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionBatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Coordinate Api Decisions Coordinate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "TreatyAIIntegrationBearer": []
+          }
+        ]
+      }
+    },
+    "/api/decisions": {
+      "get": {
+        "summary": "Decisions",
+        "operationId": "decisions_api_decisions_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Decisions Api Decisions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/decisions/{decision_id}": {
+      "get": {
+        "summary": "Decision",
+        "operationId": "decision_api_decisions__decision_id__get",
+        "parameters": [
+          {
+            "name": "decision_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Decision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Decision Api Decisions  Decision Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "summary": "Events",
+        "operationId": "events_api_events_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Events Api Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audit/verify": {
+      "get": {
+        "summary": "Audit Verify",
+        "operationId": "audit_verify_api_audit_verify_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Audit Verify Api Audit Verify Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/receipts/{decision_id}/verify": {
+      "get": {
+        "summary": "Verify Receipt",
+        "operationId": "verify_receipt_api_receipts__decision_id__verify_get",
+        "parameters": [
+          {
+            "name": "decision_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Decision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Verify Receipt Api Receipts  Decision Id  Verify Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/receipts": {
+      "get": {
+        "summary": "Receipts",
+        "operationId": "receipts_api_receipts_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Receipts Api Receipts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DecisionBatch": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Scenario Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Customer Id"
+          },
+          "proposals": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionContract"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Proposals"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "customer_id",
+          "proposals"
+        ],
+        "title": "DecisionBatch",
+        "description": "External adapter envelope for one coordinated multi-agent decision."
+      },
+      "DecisionContract": {
+        "properties": {
+          "proposal_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Proposal Id"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 96,
+            "minLength": 8,
+            "title": "Idempotency Key"
+          },
+          "agent_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Agent Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Customer Id"
+          },
+          "action_type": {
+            "type": "string",
+            "enum": [
+              "issue_credit",
+              "send_marketing",
+              "schedule_callback",
+              "resolve_case"
+            ],
+            "title": "Action Type"
+          },
+          "amount_mad": {
+            "type": "number",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Amount Mad",
+            "default": 0
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "phone",
+              "internal",
+              "none"
+            ],
+            "title": "Channel",
+            "default": "none"
+          },
+          "priority": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Priority",
+            "default": 3
+          },
+          "utility": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Utility",
+            "default": 50
+          },
+          "allow_partial": {
+            "type": "boolean",
+            "title": "Allow Partial",
+            "default": false
+          },
+          "reversible": {
+            "type": "boolean",
+            "title": "Reversible",
+            "default": true
+          },
+          "requires_human": {
+            "type": "boolean",
+            "title": "Requires Human",
+            "default": false
+          },
+          "proposed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Proposed At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "expected_state_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected State Version"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Evidence"
+          },
+          "rationale": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Rationale",
+            "default": ""
+          },
+          "context_note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Context Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "proposal_id",
+          "idempotency_key",
+          "agent_id",
+          "customer_id",
+          "action_type",
+          "proposed_at"
+        ],
+        "title": "DecisionContract",
+        "description": "Typed, bounded contract submitted by an autonomous business agent."
+      },
+      "GroqCredentialInput": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key"
+        ],
+        "title": "GroqCredentialInput"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LiveRunRequest": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "enum": [
+              "customer-journey",
+              "consent-boundary"
+            ],
+            "title": "Scenario Id"
+          },
+          "negotiation": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "deep"
+            ],
+            "title": "Negotiation",
+            "default": "deep"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_id"
+        ],
+        "title": "LiveRunRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "TreatyAIIntegrationBearer": {
+        "type": "http",
+        "description": "Separate service bearer credential for the external Salesforce adapter.",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

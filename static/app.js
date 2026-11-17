@@ -354,6 +354,12 @@ document.addEventListener("click", async function (event) {
   }
 });
 $("#refresh-button").addEventListener("click", function () { renderCurrent().then(function(){toast("Workspace refreshed");}).catch(function(e){toast(e.message,true);}); });
+window.addEventListener("hashchange", function () {
+  const view = window.location.hash.slice(1);
+  if (["overview", "agents", "decision", "receipts", "policies", "benchmark"].includes(view) && view !== state.view) {
+    setView(view);
+  }
+});
 async function boot() {
   try {
     await api("/api/health");
@@ -415,7 +421,7 @@ async function renderAgentLab() {
 function renderLiveDecision(decision) {
   const ai = decision.ai_trace || {};
   const timeline = ai.timeline || [];
-  const meta = '<div class="ai-trace-metrics"><div><small>MODEL CALLS</small><strong>' + number(ai.model_calls) + '</strong></div><div><small>INPUT TOKENS</small><strong>' + number(ai.prompt_tokens) + '</strong></div><div><small>OUTPUT TOKENS</small><strong>' + number(ai.completion_tokens) + '</strong></div><div><small>INFERENCE TIME</small><strong>' + (ai.total_latency_ms/1000 || 0).toFixed(1) + 's</strong></div></div>';
+  const meta = '<div class="ai-trace-metrics"><div><small>MODEL CALLS</small><strong>' + number(ai.model_calls) + '</strong></div><div><small>INPUT TOKENS</small><strong>' + number(ai.prompt_tokens) + '</strong></div><div><small>OUTPUT TOKENS</small><strong>' + number(ai.completion_tokens) + '</strong></div><div><small>WALL TIME</small><strong>' + ((ai.elapsed_ms||ai.total_latency_ms)/1000 || 0).toFixed(1) + 's</strong></div></div>';
   const traces = timeline.map(function(t,index) {
     const phase = ({specialist_proposal:"Independent specialist",mediation:"Negotiation mediator",specialist_counteroffer:"Credit counteroffer"})[t.phase] || t.phase;
     const details = t.phase==="mediation"

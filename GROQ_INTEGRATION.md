@@ -7,7 +7,7 @@ TreatyAI now supports two paths in the same Mac application:
 1. Offline deterministic proposal generation and TreatyBench, which require no API key.
 2. Real Groq-hosted language-model proposal generation, mediation, optional credit-counteroffer negotiation, and deterministic verification.
 
-The live path calls GroqCloud over HTTPS. It does not download model weights or add an ML runtime to the Mac.
+The live path calls GroqCloud over HTTPS. The HTTP client requests strict JSON-schema output and low reasoning effort, checks finish_reason=stop, and refuses truncated or malformed responses. It does not download model weights or add an ML runtime to the Mac.
 
 ## Activate without exposing the credential in source
 
@@ -40,7 +40,7 @@ Each request is schema-constrained. The server still validates identity-independ
 8. Under a SQLite write lock, revalidate the plan against the current customer snapshot and commit only feasible synthetic actions.
 9. Save the complete structured negotiation transcript and metrics in the decision record. SHA-256-link its canonical representation in the decision receipt and append-only event chain.
 
-The model does not write to SQLite or invoke Salesforce directly.
+The model does not write to SQLite or invoke Salesforce directly. Only one live negotiation may run at a time per local application process; competing requests return HTTP 429.
 
 ## Fail-closed behavior
 

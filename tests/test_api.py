@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 import db
 from main import app
+import main
 from engine import make_proposal
 
 
@@ -16,11 +17,15 @@ class ApiIntegrationTests(unittest.TestCase):
         self.original_db_path = db.DB_PATH
         db.DATA_DIR = Path(self.temp.name)
         db.DB_PATH = Path(self.temp.name) / "api-test.sqlite3"
+        self.integration_token = "integration-test-" + "a" * 35
+        self.token_patch = patch.dict("os.environ", {"TREATYAI_INTEGRATION_TOKEN": self.integration_token})
+        self.token_patch.start()
 
     def tearDown(self):
         db.DATA_DIR = self.original_data_dir
         db.DB_PATH = self.original_db_path
         self.temp.cleanup()
+        self.token_patch.stop()
 
     def test_local_app_and_flagship_decision(self):
         with TestClient(app) as client:
@@ -52,10 +57,13 @@ class ApiIntegrationTests(unittest.TestCase):
                 "customer_id": "C-1043",
                 "proposals": [proposal.public_dict()],
             }
-            first = client.post("/api/decisions/coordinate", json=payload)
+            headers = {"Authorization": "Bearer " + self.integration_token}
+            denied = client.post("/api/decisions/coordinate", json=payload)
+            self.assertEqual(denied.status_code, 401)
+            first = client.post("/api/decisions/coordinate", json=payload, headers=headers)
             self.assertEqual(first.status_code, 200)
             self.assertEqual(first.json()["status"], "committed")
-            replay = client.post("/api/decisions/coordinate", json=payload)
+            replay = client.post("/api/decisions/coordinate", json=payload, headers=headers)
             self.assertEqual(replay.status_code, 409)
 
     def test_groq_setup_is_same_origin_and_never_echoes_secret(self):
@@ -94,6 +102,48 @@ class ApiIntegrationTests(unittest.TestCase):
                 self.assertEqual(db.get_customer("C-1042")["remaining_budget_mad"],
                                  before["remaining_budget_mad"])
                 self.assertEqual(db.list_decisions(), [])
+
+    def test_external_adapter_refuses_unconfigured_auth(self):
+        with TestClient(app) as client:
+            with patch.dict("os.environ", {"TREATYAI_INTEGRATION_TOKEN": ""}):
+                response = client.post("/api/decisions/coordinate", json={
+                    "scenario_id": "disabled-gateway",
+                    "customer_id": "C-1042",
+                    "proposals": [],
+                })
+                self.assertEqual(response.status_code, 503)
+
+    def test_security_headers_are_present_on_all_api_responses(self):
+        with TestClient(app) as client:
+            response = client.get("/api/overview")
+            self.assertEqual(response.headers["Cache-Control"], "no-store")
+            self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+            self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
+            self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+
+    def test_invalid_external_customer_scope_is_422(self):
+        with TestClient(app) as client:
+            proposal = make_proposal("WRONG-SCOPE-1", "service-agent", "C-1043",
+                                     "issue_credit", amount=25)
+            response = client.post("/api/decisions/coordinate", json={
+                "scenario_id": "scope-isolation-test",
+                "customer_id": "C-1042",
+                "proposals": [proposal.public_dict()],
+            }, headers={"Authorization": "Bearer " + self.integration_token})
+            self.assertEqual(response.status_code, 422)
+            self.assertFalse(db.list_decisions())
+
+    def test_parallel_ai_runs_are_rate_limited(self):
+        with TestClient(app) as client:
+            main._AI_RUN_GATE.acquire()
+            try:
+                response = client.post("/api/ai/run", json={
+                    "scenario_id": "customer-journey", "negotiation": "deep",
+                })
+                self.assertEqual(response.status_code, 429)
+                self.assertFalse(db.list_decisions())
+            finally:
+                main._AI_RUN_GATE.release()
 
     def test_concurrency_and_benchmark_endpoints(self):
         with TestClient(app) as client:

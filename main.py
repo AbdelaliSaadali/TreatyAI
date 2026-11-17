@@ -5,8 +5,12 @@ from pathlib import Path
 from typing import Any
 import shutil
 import sqlite3
+import os
+import hmac
+from threading import Lock
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from credential_store import store_groq_key, KeychainError
 from fastapi.responses import FileResponse
@@ -22,10 +26,29 @@ from models import DecisionBatch, DecisionContract
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
+_AI_RUN_GATE = Lock()
+_INTEGRATION_BEARER = HTTPBearer(
+    auto_error=False,
+    scheme_name="TreatyAIIntegrationBearer",
+    description="Separate service bearer credential for the external Salesforce adapter.",
+)
+
+
+def require_integration_token(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_INTEGRATION_BEARER),
+) -> None:
+    token = os.environ.get("TREATYAI_INTEGRATION_TOKEN", "").strip()
+    if len(token) < 32:
+        raise HTTPException(
+            status_code=503,
+            detail="External integration disabled until a dedicated service token is configured.",
+        )
+    if credentials is None or not hmac.compare_digest(credentials.credentials, token):
+        raise HTTPException(status_code=401, detail="Invalid or missing integration credential.")
 
 app = FastAPI(
     title="TreatyAI Decision Governance API",
-    version="0.2.0",
+    version="0.3.0",
     description="Cross-agent decision governance, constrained resolution and verified execution.",
     docs_url="/api/docs",
     redoc_url=None,
@@ -33,6 +56,24 @@ app = FastAPI(
 )
 
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+@app.middleware("http")
+async def browser_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; connect-src 'self'; "
+        "img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' data: https://fonts.gstatic.com; base-uri 'none'; "
+        "frame-ancestors 'none'; form-action 'self'"
+    )
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 
 @app.on_event("startup")
@@ -94,7 +135,7 @@ def policies() -> dict[str, Any]:
             {"id": "P-03", "name": "Marketing consent", "severity": "hard", "description": "Marketing actions require active customer consent; prompts and agent rationale cannot override consent."},
             {"id": "P-04", "name": "Critical-case precedence", "severity": "hard", "description": "Promotional outreach is deferred while a critical customer case remains open."},
             {"id": "P-05", "name": "Contact-frequency limit", "severity": "hard", "description": "Outbound actions across agents share one customer-level contact allowance."},
-            {"id": "P-06", "name": "Human approval boundary", "severity": "hard", "description": "Actions marked as requiring human approval cannot be autonomously committed."},
+            {"id": "P-06", "name": "Human approval boundary", "severity": "hard", "description": "Irreversible actions, case resolution and actions marked for human approval cannot be autonomously committed."},
             {"id": "P-07", "name": "Idempotent execution", "severity": "hard", "description": "An approved proposal may be committed only once using its idempotency key."},
             {"id": "P-08", "name": "Evidence-linked decisions", "severity": "governance", "description": "Decision receipts preserve proposal evidence, policy version, verification results and outcome rationale."},
             {"id": "P-09", "name": "Customer scope and freshness", "severity": "hard", "description": "Every proposal must target the transaction customer and be re-evaluated against the latest customer-state version before commit."},
@@ -142,19 +183,24 @@ def ai_configure(request: Request, credentials: GroqCredentialInput) -> dict[str
 @app.post("/api/ai/run")
 def ai_run(request: LiveRunRequest) -> dict[str, Any]:
     """Real Groq specialists -> mediator -> counteroffers -> independent verifier."""
+    if not _AI_RUN_GATE.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail="An AI negotiation is already running on this local instance.")
     try:
-        return run_live(request)
-    except GroqConfigurationError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from None
-    except (GroqGenerationError, ValidationError, ValueError) as exc:
-        # Provider failures and malformed model responses never mutate customer state.
-        if isinstance(exc, GroqGenerationError):
-            message = str(exc)
-        else:
-            message = "Model output failed contract validation. No decision committed."
-        raise HTTPException(status_code=502, detail=message) from None
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=409, detail="Duplicate proposal or conflicting transaction. No replay committed.") from None
+        try:
+            return run_live(request)
+        except GroqConfigurationError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from None
+        except (GroqGenerationError, ValidationError, ValueError) as exc:
+            # Provider failures and malformed model responses never mutate customer state.
+            if isinstance(exc, GroqGenerationError):
+                message = str(exc)
+            else:
+                message = "Model output failed contract validation. No decision committed."
+            raise HTTPException(status_code=502, detail=message) from None
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=409, detail="Duplicate proposal or conflicting transaction. No replay committed.") from None
+    finally:
+        _AI_RUN_GATE.release()
 
 @app.get("/api/scenarios")
 def scenarios() -> dict[str, Any]:
@@ -273,16 +319,18 @@ def latest_benchmark() -> dict[str, Any]:
 
 
 @app.post("/api/decisions/coordinate")
-def coordinate(batch: DecisionBatch) -> dict[str, Any]:
+def coordinate(batch: DecisionBatch, _: None = Depends(require_integration_token)) -> dict[str, Any]:
     """Accept a batch of agent intents through the future integration boundary."""
     customer = db.get_customer(batch.customer_id)
     if customer is None:
         raise HTTPException(status_code=404, detail="Customer not found")
-    preview = build_decision(batch.scenario_id, customer, batch.proposals)
     try:
+        preview = build_decision(batch.scenario_id, customer, batch.proposals)
         return db.create_decision(batch.scenario_id, batch.customer_id, preview, commit_actions=True)
-    except sqlite3.IntegrityError as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Proposal batch violates customer scope or unique identifier requirements.") from None
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="The proposal idempotency key has already been processed.") from None
 
 
 @app.get("/api/decisions")

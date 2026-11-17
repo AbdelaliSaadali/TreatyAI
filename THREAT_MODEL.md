@@ -38,13 +38,13 @@
 - A marketing agent cannot bypass withdrawn consent by including instruction-like text in its rationale.
 - Two concurrent requests cannot jointly commit more than the locked shared budget in the tested SQLite deployment.
 - A proposal outside its registered action scope is rejected.
-- A proposal requiring human approval does not get autonomously committed.
+- A proposal requiring human approval, a case-resolution action or an irreversible action does not get autonomously committed.
 - Reusing a processed idempotency key is rejected.
 - Modifying an existing audit event payload is detected by chain verification.
 
 ## Explicit non-goals and residual risks
 
-- The local demo does not authenticate remote users and binds only to loopback.
+- The local demo binds only to loopback. The external decision intake is disabled without a distinct service bearer token; this is NOT individual agent authentication or tenant isolation.
 - It does not implement tenant isolation or production RBAC.
 - It does not protect against a privileged local attacker who can rewrite the SQLite database and recompute all hashes.
 - It does not sign receipts with a hardware-backed or external key.

@@ -56,7 +56,7 @@ The API validates the contracts, reads the customer snapshot and constructs the 
 
 ### Analyze
 
-The policy engine checks:
+The deterministic policy engine checks:
 
 - Registered agent identity.
 - Delegated action scope.
@@ -66,7 +66,7 @@ The policy engine checks:
 - Customer-wide outbound contact allowance.
 - Human approval requirements.
 
-The conflict graph adds relationships for shared compensation, journey precedence and contact-frequency contention.
+The conflict graph adds relationships for shared compensation, journey precedence and contact-frequency contention, including aggregate budget conflicts across three or more agents even if every individual pair fits the budget.
 
 ### Resolve
 
@@ -76,7 +76,7 @@ The current objective maximizes the sum of proposal utility after partial-resolu
 
 ### Verify
 
-A separate function re-evaluates the selected plan against the customer snapshot. It does not trust the optimizer's rationale. The verifier checks delegated authority, cumulative budget, outbound quota, consent/journey rules and unique execution keys.
+The independent verifier.py module re-evaluates selected actions against the typed contracts and customer snapshot. It additionally reconstructs amounts, utility scores, outcome status, totals and delegated authority. It does not trust the optimizer's rationale. The verifier checks delegated authority, cumulative budget, outbound quota, consent/journey rules and unique execution keys.
 
 ### Commit
 

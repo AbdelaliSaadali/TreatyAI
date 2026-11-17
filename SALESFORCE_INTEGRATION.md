@@ -6,7 +6,7 @@
 
 This repository has no Salesforce Developer Org, Agentforce credentials, Named Credential, Marketing Cloud account or live Salesforce adapter. The current FastAPI service binds to 127.0.0.1 and is intentionally local-only. Salesforce cloud services cannot call that loopback address.
 
-The generic endpoint is implemented and documented:
+The generic endpoint is implemented and documented. It now requires a separate TREATYAI_INTEGRATION_TOKEN bearer credential and responds HTTP 503 when it is not configured:
 
 - OpenAPI schema: /api/openapi.json
 - API reference: /api/docs

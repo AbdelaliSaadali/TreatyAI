@@ -185,6 +185,17 @@ class ProviderContractTests(unittest.TestCase):
             with self.assertRaises(GroqConfigurationError):
                 validate_remote_key("test-placeholder")
 
+    def test_incomplete_groq_response_fails_closed(self):
+        payload = {"choices": [{"message": {"content": "{}"}, "finish_reason": "length"}]}
+        with httpx.Client(transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, json=payload)
+        )) as client:
+            provider = GroqProvider(api_key="dummy-test", client=client)
+            with self.assertRaises(GroqGenerationError):
+                provider.complete(system="test", user={}, schema_name="test",
+                                  schema={"type": "object", "properties": {},
+                                          "required": [], "additionalProperties": False})
+
     def test_key_rejection_avoids_exposing_secret(self):
         with httpx.Client(transport=httpx.MockTransport(lambda req: httpx.Response(401))) as client:
             provider = GroqProvider(api_key="private-placeholder", client=client)

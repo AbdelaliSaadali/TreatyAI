@@ -11,6 +11,7 @@ from typing import Any, Literal
 from uuid import uuid4
 import hashlib
 import json
+import time
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -315,6 +316,7 @@ def _counteroffer(provider: GroqProvider, proposal: Any, mediator: MediationAsse
 
 def run_live(request: LiveRunRequest, *, provider: GroqProvider | None = None) -> dict[str, Any]:
     """No mutation occurs until every inference and validation step succeeds."""
+    started = time.monotonic()
     tasks = ROLE_TASKS[request.scenario_id]
     customer_id = "C-1042" if request.scenario_id == "customer-journey" else "C-1043"
     customer = db.get_customer(customer_id)
@@ -366,6 +368,7 @@ def run_live(request: LiveRunRequest, *, provider: GroqProvider | None = None) -
         "prompt_tokens": sum(t["usage"]["prompt_tokens"] for t in transcript),
         "completion_tokens": sum(t["usage"]["completion_tokens"] for t in transcript),
         "total_latency_ms": sum(t["latency_ms"] for t in transcript),
+        "elapsed_ms": round((time.monotonic() - started) * 1000),
         "timeline": transcript,
         "initial_conflicts": preview["conflict_graph"]["edges"],
         "final_conflicts": final_preview["conflict_graph"]["edges"],

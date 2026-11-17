@@ -160,20 +160,37 @@ def build_conflict_graph(
             "amount_mad": p.amount_mad,
             "priority": p.priority,
         })
+    # Pairwise edges alone miss cumulative conflicts (e.g. 3 × 40 MAD
+    # against a 100 MAD budget). Capture the global shared-resource clique.
+    credits = [p for p in proposals if p.action_type == "issue_credit"]
+    combined_credit = sum(p.amount_mad for p in credits)
+    cumulative_budget_conflict = (
+        len(credits) > 1 and combined_credit > customer["remaining_budget_mad"] + 1e-9
+    )
+    outbound_proposals = [
+        p for p in proposals if p.action_type in ("send_marketing", "schedule_callback")
+    ]
+    contact_capacity = max(
+        0, customer["max_communications_per_24h"] - customer["communications_last_24h"]
+    )
+    cumulative_contact_conflict = len(outbound_proposals) > contact_capacity
     for i, left in enumerate(proposals):
         for right in proposals[i + 1:]:
             if left.customer_id != right.customer_id:
                 continue
             if left.action_type == "issue_credit" and right.action_type == "issue_credit":
                 total = left.amount_mad + right.amount_mad
-                if total > customer["remaining_budget_mad"]:
+                if cumulative_budget_conflict:
                     edges.append({
                         "source": left.proposal_id,
                         "target": right.proposal_id,
-                        "type": "shared_budget",
+                        "type": "shared_budget" if total > customer["remaining_budget_mad"] else "aggregate_budget",
                         "severity": "critical",
-                        "label": "Shared compensation cap",
-                        "detail": f"Combined request is {total:.0f} MAD against {customer['remaining_budget_mad']:.0f} MAD available.",
+                        "label": "Global compensation contention",
+                        "detail": (
+                            f"All credit agents request {combined_credit:.0f} MAD "
+                            f"against {customer['remaining_budget_mad']:.0f} MAD available."
+                        ),
                     })
             if {left.action_type, right.action_type} == {"send_marketing", "resolve_case"} or (
                 customer["open_critical_case"] and
@@ -187,7 +204,9 @@ def build_conflict_graph(
                     "label": "Customer journey precedence",
                     "detail": "Promotional outreach must wait until the critical customer issue is resolved.",
                 })
-            if left.action_type in ("send_marketing", "schedule_callback") and right.action_type in ("send_marketing", "schedule_callback"):
+            if (cumulative_contact_conflict
+                and left.action_type in ("send_marketing", "schedule_callback")
+                and right.action_type in ("send_marketing", "schedule_callback")):
                 edges.append({
                     "source": left.proposal_id,
                     "target": right.proposal_id,
@@ -210,7 +229,7 @@ def _precondition(
     allowed, reason = authority_check(proposal)
     if not allowed:
         return False, reason, "rejected"
-    if proposal.requires_human:
+    if proposal.requires_human or not proposal.reversible or proposal.action_type == "resolve_case":
         return False, "HUMAN_APPROVAL_REQUIRED", "needs_human"
     if proposal.action_type == "send_marketing":
         if not customer["marketing_consent"]:
@@ -357,52 +376,9 @@ def verify_plan(
     customer: dict[str, Any],
     plan: dict[str, Any],
 ) -> dict[str, Any]:
-    """Independent deterministic verifier; does not trust optimizer rationale."""
-    selected = {x["proposal_id"]: x for x in plan["selected"]}
-    proposal_by_id = {p.proposal_id: p for p in proposals}
-    checks = []
-    total = 0.0
-    outbound = 0
-    unique_keys = set()
-    all_authorized = True
-    for proposal_id, option in selected.items():
-        proposal = proposal_by_id[proposal_id]
-        ok, reason = authority_check(proposal)
-        if not ok or proposal.requires_human or proposal.customer_id != customer["id"] or option["action_type"] != proposal.action_type:
-            all_authorized = False
-        if proposal.expires_at is not None and proposal.expires_at <= utc_now():
-            all_authorized = False
-        if proposal.action_type == "issue_credit":
-            amount = option["amount_mad"]
-            if amount <= 0 or amount > proposal.amount_mad or (amount < proposal.amount_mad and not proposal.allow_partial):
-                all_authorized = False
-        total += option["amount_mad"]
-        if option["action_type"] in ("send_marketing", "schedule_callback"):
-            outbound += 1
-        unique_keys.add(proposal.idempotency_key)
-        if proposal.action_type == "send_marketing":
-            if not customer["marketing_consent"] or customer["open_critical_case"]:
-                all_authorized = False
-    checks.append({"id": "delegated_authority", "label": "Delegated authority", "passed": all_authorized, "detail": "Every selected action is within the agent's registered scope." if all_authorized else "At least one selected action violates delegated authority."})
-    budget_ok = total <= customer["remaining_budget_mad"] + 1e-9
-    checks.append({"id": "global_budget", "label": "Global compensation budget", "passed": budget_ok, "detail": f"{total:.0f} / {customer['remaining_budget_mad']:.0f} MAD allocated."})
-    contact_ok = outbound <= max(0, customer["max_communications_per_24h"] - customer["communications_last_24h"])
-    checks.append({"id": "contact_limit", "label": "Contact-frequency limit", "passed": contact_ok, "detail": f"{outbound} / {max(0, customer['max_communications_per_24h'] - customer['communications_last_24h'])} outbound actions."})
-    consent_ok = all(
-        customer["marketing_consent"] and not customer["open_critical_case"]
-        for x in plan["selected"] if x["action_type"] == "send_marketing"
-    )
-    checks.append({"id": "consent_and_journey", "label": "Consent & journey precedence", "passed": consent_ok, "detail": "No marketing action bypasses consent or open-case suppression."})
-    idempotency_ok = len(unique_keys) == len(selected)
-    checks.append({"id": "idempotency", "label": "Unique execution keys", "passed": idempotency_ok, "detail": "Each selected action has a unique idempotency key."})
-    passed = all(x["passed"] for x in checks)
-    return {
-        "passed": passed,
-        "checks": checks,
-        "verified_compensation_mad": round(total, 2),
-        "verified_outbound_actions": outbound,
-        "verifier": "TreatyAI Independent Verifier",
-    }
+    """Independently verify the optimizer result in a separate module."""
+    from verifier import verify_plan as independently_verify
+    return independently_verify(proposals, customer, plan, AGENTS)
 
 
 def build_decision(

@@ -17,7 +17,7 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 KEYCHAIN_SERVICE = "TreatyAI-Groq-API"
 DEFAULT_MODEL = "openai/gpt-oss-20b"
 SUPPORTED_MODELS = ("openai/gpt-oss-20b", "openai/gpt-oss-120b")
-MAX_ATTEMPTS = 3
+MAX_ATTEMPTS = 2
 
 
 class GroqConfigurationError(RuntimeError):
@@ -75,7 +75,7 @@ class GroqProvider:
         self.api_key = api_key if api_key is not None else resolve_key()
         if not self.api_key:
             raise GroqConfigurationError(
-                "Groq is not configured. Add the key to the macOS Keychain using setup_groq.sh."
+                "Groq is not configured. Use the AI Agent Lab's local Keychain setup."
             )
         self.model = model or model_name()
         if self.model not in SUPPORTED_MODELS:
@@ -88,6 +88,7 @@ class GroqProvider:
         body = {
             "model": self.model,
             "temperature": 0.15,
+            "reasoning_effort": "low",
             "max_completion_tokens": max_tokens,
             "messages": [
                 {"role": "system", "content": system},
@@ -107,7 +108,7 @@ class GroqProvider:
             started = time.monotonic()
             try:
                 if self.client is None:
-                    with httpx.Client(timeout=httpx.Timeout(45, connect=8)) as client:
+                    with httpx.Client(timeout=httpx.Timeout(30, connect=8)) as client:
                         response = client.post(GROQ_URL, json=body, headers=headers)
                 else:
                     response = self.client.post(GROQ_URL, json=body, headers=headers)
@@ -137,7 +138,12 @@ class GroqProvider:
 
             try:
                 result = response.json()
-                message = result["choices"][0]["message"]
+                choice = result["choices"][0]
+                if choice.get("finish_reason") != "stop":
+                    raise GroqGenerationError(
+                        "Groq did not finish the structured response; no decision may be committed."
+                    )
+                message = choice["message"]
                 if message.get("refusal"):
                     raise GroqGenerationError("Groq returned a model refusal.")
                 content = message["content"]
