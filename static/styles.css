@@ -237,3 +237,66 @@ button{font:inherit;cursor:pointer}
 .boundary-copy strong{color:#51655a}
 
 .status-pill.no_action{background:#f1f4f2;color:#7f8c86}
+
+/* AI Agent Lab — lightweight native CSS, no component-library dependencies */
+.ai-dark-hero{display:flex;align-items:center;justify-content:space-between;gap:30px;position:relative;overflow:hidden;background:#14252f;border:1px solid #243c40;border-radius:15px;min-height:212px;padding:24px 30px;margin-bottom:16px}
+.ai-dark-hero:before{content:"";position:absolute;width:370px;height:370px;right:-90px;top:-195px;border:1px solid rgba(163,229,191,.13);box-shadow:0 0 0 33px rgba(163,229,191,.035),0 0 0 72px rgba(163,229,191,.02);border-radius:50%}
+.ai-dark-hero>div:first-child{z-index:1}
+.ai-dark-hero h2{font:700 25px Manrope,sans-serif;letter-spacing:-.9px;line-height:1.3;color:#f3fbf5;margin:10px 0}
+.ai-dark-hero h2 span{color:#a6e6c3}
+.ai-dark-hero p{font-size:10px;color:#adc1bb;max-width:510px;line-height:1.65;margin:0}
+.ai-hero-orbit{width:190px;min-width:190px;height:165px;display:flex;justify-content:center;align-items:center;position:relative;z-index:1}
+.ai-hero-orbit:before{content:"";height:116px;width:116px;border:1px dashed #47746d;border-radius:50%;position:absolute;transform:rotate(25deg)}
+.ai-hero-orbit span{font:600 9px "DM Mono",monospace;color:#b8e8d1;background:#263f3f;padding:10px 9px;border:1px solid #3c6258;border-radius:50%;position:absolute}
+.ai-hero-orbit span:nth-child(1){top:4px;left:73px}
+.ai-hero-orbit span:nth-child(2){bottom:9px;left:5px;font-size:8px}
+.ai-hero-orbit span:nth-child(3){bottom:9px;right:0;font-size:8px}
+.ai-setup,.ai-connected{border-radius:12px;padding:16px 19px;margin-bottom:22px;border:1px solid #e0e9e2;background:#fff}
+.ai-setup-head{display:flex;align-items:center;gap:11px}
+.ai-setup-icon{width:37px;height:37px;display:grid;place-items:center;background:#ecf6ef;border-radius:10px;font-size:17px;color:#3d9a6b}
+.ai-setup-head>div:last-child{display:flex;flex-direction:column;gap:5px}
+.ai-setup-head strong{font-size:12px;color:#354b3e}
+.ai-setup-head span{font-size:9px;color:#8b9a90}
+.ai-setup-controls{display:flex;gap:10px;margin-top:15px}
+.ai-setup-controls input{flex:1;min-width:0;border:1px solid #dfe8e2;border-radius:8px;background:#fafcfb;color:#33483a;padding:10px 12px;font:11px "DM Mono",monospace;outline:0}
+.ai-setup-controls input:focus{border-color:#80c6a3;box-shadow:0 0 0 3px rgba(85,174,123,.09)}
+.ai-private{font:9px "DM Mono",monospace;color:#94a69a;margin-top:10px}
+.ai-connected{background:#eff9f2;border-color:#d9eddf;display:flex;align-items:center;gap:10px}
+.ai-connected strong{color:#397952;font-size:11px}
+.ai-connected span:last-child{color:#6f9480;font:9px "DM Mono",monospace;margin-left:auto}
+.ai-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:20px 0 10px}
+.ai-section-head strong{font:700 12px Manrope,sans-serif;color:#354b40}
+.ai-section-head>span{font:500 8px "DM Mono",monospace;letter-spacing:.6px;color:#9aa9a0}
+.ai-launch{background:#edf6f0;border:1px solid #d9eadd;padding:14px 16px;border-radius:12px;display:flex;align-items:center;gap:15px;justify-content:space-between;margin:17px 0}
+.ai-launch-left>strong{display:block;margin-bottom:9px;font-size:10px;color:#4c725a}
+.ai-mode-buttons{display:flex;gap:7px}
+.ai-mode{border:1px solid #d6e5d9;background:#fff;text-align:left;color:#59715f;padding:7px 12px;border-radius:8px;font-size:10px;font-weight:700;display:flex;flex-direction:column;gap:3px}
+.ai-mode small{font-size:8px;color:#91a094;font-weight:400}
+.ai-mode.active{border-color:#59a879;background:#e3f4e9;box-shadow:0 0 0 2px #dbefe1}
+.ai-run{font-size:10px;min-height:38px;white-space:nowrap}
+.ai-step-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:19px}
+.ai-step{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px;min-height:97px}
+.ai-step small{display:block;font:700 8px "DM Mono",monospace;color:#61a985;margin-bottom:11px}
+.ai-step strong{display:block;color:#43584a;font-size:10px;margin-bottom:5px}
+.ai-step span{font-size:8px;line-height:1.5;color:#94a198}
+.ai-blank{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:25px;text-align:center}
+.ai-blank-symbol{color:#67a982;font-size:28px;margin-bottom:15px}
+.ai-blank strong{font-size:11px;color:#486054}
+.ai-blank span{display:block;margin-top:9px;color:#91a199;font-size:9px;max-width:380px;line-height:1.6}
+.ai-trace-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}
+.ai-trace-metrics>div{padding:13px 15px;background:#fff;border:1px solid #e4ebe5;border-radius:10px}
+.ai-trace-metrics small{display:block;font:500 8px "DM Mono",monospace;color:#9aa79e;margin-bottom:7px}
+.ai-trace-metrics strong{font:700 17px Manrope,sans-serif;color:#344b3e}
+.ai-timeline{margin-bottom:16px}
+.ai-timeline-item{border-top:1px solid #edf0ed;padding:14px 0;display:flex;align-items:flex-start;gap:13px}
+.ai-timeline-item:first-child{border-top:0}
+.ai-timeline-number{width:26px;height:26px;background:#edf7ef;color:#55a176;border-radius:8px;display:grid;place-items:center;font:600 9px "DM Mono",monospace;flex:none}
+.ai-timeline-main{min-width:0;flex:1}
+.ai-timeline-header{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.ai-timeline-header strong{font-size:10px;color:#405749}
+.ai-timeline-header span{font:8px "DM Mono",monospace;color:#87a08e}
+.ai-timeline-main p{font-size:9px;line-height:1.55;color:#6e7f74;margin:7px 0}
+.ai-timeline-main small{font:8px "DM Mono",monospace;color:#a0aca3}
+.ai-timeline-pill{font:8px "DM Mono",monospace;border:1px solid #dce9e0;background:#f4faf6;padding:5px 7px;border-radius:6px;color:#578f6c;white-space:nowrap}
+@media(max-width:980px){.ai-step-grid{grid-template-columns:repeat(2,1fr)}.ai-dark-hero{gap:12px}.ai-hero-orbit{width:140px;min-width:140px}.ai-launch{align-items:flex-start;flex-direction:column}.ai-run{width:100%}}
+@media(max-width:660px){.ai-dark-hero{padding:19px}.ai-dark-hero h2{font-size:19px}.ai-hero-orbit{display:none}.ai-setup-controls{flex-direction:column}.ai-connected{flex-wrap:wrap}.ai-connected span:last-child{margin-left:0}.ai-mode-buttons{flex-wrap:wrap}.ai-step-grid{grid-template-columns:1fr 1fr}.ai-trace-metrics{grid-template-columns:1fr 1fr}.ai-timeline-pill{white-space:normal}.ai-timeline-item{gap:8px}}

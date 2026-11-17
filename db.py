@@ -158,6 +158,7 @@ def create_decision(
     decision: dict[str, Any],
     *,
     commit_actions: bool = True,
+    context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     decision_id = "DEC-" + uuid.uuid4().hex[:10].upper()
     created_at = datetime.now(timezone.utc).isoformat()
@@ -222,6 +223,9 @@ def create_decision(
 
         fresh["decision_id"] = decision_id
         fresh["created_at"] = created_at
+        if context is not None:
+            fresh["ai_trace"] = context
+        trace_hash = hashlib.sha256(canonical_json(context).encode("utf-8")).hexdigest() if context is not None else None
         receipt_payload = {
             "decision_id": decision_id,
             "scenario_id": scenario_id,
@@ -229,6 +233,7 @@ def create_decision(
             "status": fresh["status"],
             "policy_version": fresh["policy_version"],
             "engine_version": fresh["engine_version"],
+            "ai_trace_hash": trace_hash,
             "state_version_before": customer["state_version"],
             "state_version_after": fresh["state_version_after"],
             "stale_proposals_revalidated": stale,
@@ -377,7 +382,7 @@ def verify_receipt(decision_id: str) -> dict[str, Any] | None:
     conn = connect()
     try:
         row = conn.execute(
-            "SELECT receipt_json,receipt_hash FROM decisions WHERE id=?",
+            "SELECT receipt_json,receipt_hash,decision_json FROM decisions WHERE id=?",
             (decision_id,),
         ).fetchone()
         if row is None:
@@ -397,10 +402,18 @@ def verify_receipt(decision_id: str) -> dict[str, Any] | None:
             (decision_id,),
         ).fetchone()
         anchored_hash = json.loads(prepared["payload_json"]).get("receipt_hash") if prepared else None
+        stored_trace_hash = receipt.get("ai_trace_hash")
+        full_decision = json.loads(row["decision_json"])
+        actual_trace = full_decision.get("ai_trace")
+        computed_trace_hash = (
+            hashlib.sha256(canonical_json(actual_trace).encode("utf-8")).hexdigest()
+            if actual_trace is not None else None
+        )
     finally:
         conn.close()
     chain = verify_event_chain()
     valid = (
+        stored_trace_hash == computed_trace_hash and
         stored_hash == expected_hash
         and row["receipt_hash"] == stored_hash
         and anchored_hash == stored_hash
@@ -412,6 +425,7 @@ def verify_receipt(decision_id: str) -> dict[str, Any] | None:
         "receipt_hash": stored_hash,
         "computed_hash": expected_hash,
         "anchored_in_event_chain": anchored_hash == stored_hash,
+        "ai_trace_hash_valid": stored_trace_hash == computed_trace_hash,
         "event_chain_valid": chain["valid"],
         "events_verified": chain["events_verified"],
     }

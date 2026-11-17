@@ -6,11 +6,16 @@ from typing import Any
 import shutil
 import sqlite3
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from pydantic import BaseModel
+from credential_store import store_groq_key, KeychainError
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 
 import db
+from groq_provider import status as groq_status, validate_remote_key, GroqConfigurationError, GroqGenerationError
+from live_agents import LiveRunRequest, run_live
 from engine import AGENTS, POLICY_VERSION, build_decision, customer_journey_proposals, consent_violation_proposals, make_proposal, run_benchmark
 from models import DecisionBatch, DecisionContract
 
@@ -20,7 +25,7 @@ STATIC = ROOT / "static"
 
 app = FastAPI(
     title="TreatyAI Decision Governance API",
-    version="0.1.0",
+    version="0.2.0",
     description="Cross-agent decision governance, constrained resolution and verified execution.",
     docs_url="/api/docs",
     redoc_url=None,
@@ -96,6 +101,60 @@ def policies() -> dict[str, Any]:
         ],
     }
 
+
+
+
+@app.get("/api/ai/status")
+def ai_status() -> dict[str, Any]:
+    return groq_status()
+
+
+
+
+class GroqCredentialInput(BaseModel):
+    api_key: str
+
+
+@app.post("/api/ai/configure")
+def ai_configure(request: Request, credentials: GroqCredentialInput) -> dict[str, Any]:
+    """One-time loopback-only Keychain setup; never returns or logs the key."""
+    host = request.headers.get("host", "")
+    origin = request.headers.get("origin", "")
+    if host.split(":")[0] not in ("127.0.0.1", "localhost"):
+        raise HTTPException(status_code=403, detail="Loopback access required.")
+    if origin not in (f"http://{host}",):
+        raise HTTPException(status_code=403, detail="Same-origin browser request required.")
+    if len(credentials.api_key) > 160:
+        raise HTTPException(status_code=400, detail="Invalid credential length.")
+    try:
+        verification = validate_remote_key(credentials.api_key)
+        store_groq_key(credentials.api_key)
+    except GroqConfigurationError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from None
+    except GroqGenerationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from None
+    except KeychainError:
+        raise HTTPException(status_code=400, detail="Credential was not saved; check its format and macOS Keychain availability.") from None
+    return {"configured": groq_status()["configured"], "validated": verification["validated"],
+            "available_models": verification["available_models"],
+            "provider": "GroqCloud", "stored_in": "macOS login Keychain", "secret_echoed": False}
+
+@app.post("/api/ai/run")
+def ai_run(request: LiveRunRequest) -> dict[str, Any]:
+    """Real Groq specialists -> mediator -> counteroffers -> independent verifier."""
+    try:
+        return run_live(request)
+    except GroqConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
+    except (GroqGenerationError, ValidationError, ValueError) as exc:
+        # Provider failures and malformed model responses never mutate customer state.
+        if isinstance(exc, GroqGenerationError):
+            message = str(exc)
+        else:
+            message = "Model output failed contract validation. No decision committed."
+        raise HTTPException(status_code=502, detail=message) from None
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="Duplicate proposal or conflicting transaction. No replay committed.") from None
 
 @app.get("/api/scenarios")
 def scenarios() -> dict[str, Any]:

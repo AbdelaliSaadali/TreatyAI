@@ -82,7 +82,7 @@ function renderOverview(data) {
     '<section class="panel table-panel"><div class="panel-header"><div><div class="panel-title">Recent decisions</div><div class="panel-subtitle">A traceable record of coordinated business actions</div></div><button class="panel-action" data-view="receipts">View all receipts →</button></div>' +
     '<div class="table-scroll"><table class="data-table"><thead><tr><th>Decision</th><th>Customer</th><th>Status</th><th>Receipt hash</th><th>Created</th><th></th></tr></thead><tbody>' + (rows || '<tr><td colspan="6">' + empty("No decisions yet. Run the flagship scenario to create the first receipt.") + '</td></tr>') + '</tbody></table></div></section>' +
     '<div class="split-grid"><section class="panel"><div class="panel-header"><div><div class="panel-title">Customer state snapshot</div><div class="panel-subtitle">Synthetic CRM record · C-1042</div></div><span class="status-pill neutral">premium</span></div><div class="panel-body"><div class="customer-line"><div class="customer-avatar">NE</div><div><strong>Nadia El Amrani</strong><span>Premium customer · Casablanca</span></div><div class="customer-budget">' + money(primary.remaining_budget_mad) + '<small>Remaining allowance</small></div></div><div class="customer-flags"><span class="' + (primary.open_critical_case ? "flag-warn" : "flag-ok") + '">' + (primary.open_critical_case ? "● Critical case open" : "● No critical case") + '</span><span class="' + (primary.marketing_consent ? "flag-ok" : "flag-warn") + '">' + (primary.marketing_consent ? "● Marketing consent active" : "● Marketing opted out") + '</span></div></div></section>' +
-    '<section class="panel"><div class="panel-header"><div><div class="panel-title">System boundary</div><div class="panel-subtitle">What this prototype actually controls</div></div></div><div class="panel-body boundary-copy"><p><strong>Local simulation.</strong> Agent proposals are synthetic and no external Salesforce action is performed.</p><p>The same API contracts are designed for a future Agentforce adapter. Only actions passing through TreatyAI’s execution gate are governed.</p></div></section></div>';
+    '<section class="panel"><div class="panel-header"><div><div class="panel-title">System boundary</div><div class="panel-subtitle">What this prototype actually controls</div></div></div><div class="panel-body boundary-copy"><p><strong>Local simulation.</strong> Agent proposals are synthetic and no external Salesforce action is performed.</p><p>The generic API contracts are ready for an Agentforce adapter. Only actions passing through the local TreatyAI execution gate are governed.</p></div></section></div>';
   $("#app-content").innerHTML = html;
   $("#page-crumb").textContent = "Overview";
 }
@@ -303,6 +303,8 @@ async function renderCurrent() {
   if (state.view === "overview") {
     state.overview = await api("/api/overview");
     renderOverview(state.overview);
+  } else if (state.view === "agents") {
+    await renderAgentLab();
   } else if (state.view === "decision") {
     await loadDecision();
   } else if (state.view === "receipts") {
@@ -327,6 +329,12 @@ document.addEventListener("click", async function (event) {
   if (event.target.closest("[data-go-decision]")) { setView("decision"); return; }
   const select = event.target.closest("[data-select-scenario]");
   if (select) { state.selectedScenario = select.dataset.selectScenario; state.decision = null; loadDecision(); return; }
+  if (event.target.closest("[data-connect-groq]")) { connectGroq(); return; }
+  if (event.target.closest("[data-ai-run]")) { runGroqNegotiation(); return; }
+  const scenarioAI = event.target.closest("[data-ai-scenario]");
+  if (scenarioAI) { aiState.scenario = scenarioAI.dataset.aiScenario; aiState.decision = null; renderAgentLab(); return; }
+  const modeAI = event.target.closest("[data-ai-level]");
+  if (modeAI) { aiState.level = modeAI.dataset.aiLevel; renderAgentLab(); return; }
   if (event.target.closest("[data-run-selected]")) { runScenario(); return; }
   if (event.target.closest("[data-run-race]")) { runRace(); return; }
   if (event.target.closest("[data-reset]")) { resetDemo(); return; }
@@ -352,10 +360,113 @@ async function boot() {
     state.overview = await api("/api/overview");
     state.scenarios = (await api("/api/scenarios")).scenarios;
     const requestedView = window.location.hash.replace("#", "");
-    const validViews = ["overview", "decision", "receipts", "policies", "benchmark"];
+    const validViews = ["overview", "agents", "decision", "receipts", "policies", "benchmark"];
     await setView(validViews.includes(requestedView) ? requestedView : "overview");
   } catch (error) {
     $("#app-content").innerHTML = '<div class="empty-state">TreatyAI API is not reachable. Start the local server with <code>./run.sh</code> and refresh this page.<br><br>' + esc(error.message) + '</div>';
   }
 }
 boot();
+
+const aiState = {scenario:"customer-journey", level:"deep", status:null, decision:null, loading:false};
+
+async function renderAgentLab() {
+  aiState.status = await api("/api/ai/status");
+  if (!aiState.decision) {
+    const history = await api("/api/decisions?limit=40");
+    aiState.decision = (history.decisions || []).find(function (d) {
+      return d.scenario_id === "groq-" + aiState.scenario && d.ai_trace;
+    }) || null;
+  }
+  const connected = aiState.status.configured;
+  const scenarios = [
+    {id:"customer-journey",title:"Customer journey",desc:"Service, retention and marketing agents negotiate shared credit and contact rules.",agents:"3 specialists"},
+    {id:"consent-boundary",title:"Consent boundary",desc:"An adversarial campaign note tests whether an LLM can bypass revoked consent.",agents:"2 specialists"}
+  ];
+  const steps = [
+    ["01","Independent proposals","Specialists reason in separate contexts"],
+    ["02","Conflict discovery","Typed decisions become a constraint graph"],
+    ["03","AI mediation","A Groq mediator proposes a compromise"],
+    ["04","Counteroffers","Each credit agent evaluates the suggested settlement"],
+    ["05","Independent verification","Hard rules and global limits decide"],
+    ["06","Execution receipt","A hash-linked local audit receipt is created"]
+  ];
+  let setup = connected
+    ? '<div class="ai-connected"><span class="pulse-dot"></span><strong>Groq connected</strong><span>' + esc(aiState.status.model) + ' · credential in macOS Keychain</span></div>'
+    : '<div class="ai-setup"><div class="ai-setup-head"><div class="ai-setup-icon">◈</div><div><strong>Connect your Groq API</strong><span>Your key stays in the macOS login Keychain and is never sent to the browser again.</span></div></div><div class="ai-setup-controls"><input id="groq-key-field" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste Groq API key once" aria-label="Groq API key"><button class="button button-primary" data-action data-connect-groq>Save to Keychain ↗</button></div><div class="ai-private">Local connection only · no plaintext config file · no external business actions</div></div>';
+  const result = aiState.decision ? renderLiveDecision(aiState.decision) : '<section class="panel ai-blank"><div class="ai-blank-symbol">⌁</div><strong>Your agents are ready to negotiate</strong><span>Connect Groq and launch the workflow to watch specialist proposals, mediation and hard-rule verification.</span></section>';
+  $("#app-content").innerHTML =
+    pageHeading("INTELLIGENCE / AGENT LAB","The AI negotiation lab.","Independent Groq-powered specialists negotiate. TreatyAI verifies every resulting action before committing anything locally.",
+      '<span class="status-pill ' + (connected ? "verified" : "deferred") + '">' + (connected ? "Provider configured" : "Provider not configured") + '</span>') +
+    '<section class="ai-dark-hero"><div><div class="eyebrow" style="color:#8ec9a9">THE GOVERNANCE DIFFERENCE</div><h2>Reason together.<br><span>Act only when verified.</span></h2><p>Real LLM-generated intentions, real negotiation, deterministic policy gates. No API output is trusted as permission to act.</p></div><div class="ai-hero-orbit"><span>AI</span><span>VERIFY</span><span>COMMIT</span></div></section>' +
+    setup +
+    '<div class="ai-section-head"><strong>Choose a business scenario</strong><span>SYNTHETIC CUSTOMER DATA</span></div>' +
+    '<div class="scenario-grid">' + scenarios.map(function(s){
+      return '<button class="scenario-card ' + (aiState.scenario===s.id?"selected":"") + '" data-ai-scenario="' + s.id + '"><div class="scenario-icon">✳</div><strong>' + esc(s.title) + '</strong><p>' + esc(s.desc) + '</p><div class="scenario-meta">' + s.agents + ' · GROQ</div></button>';
+    }).join("") + '</div>' +
+    '<section class="ai-launch"><div class="ai-launch-left"><strong>Negotiation depth</strong><div class="ai-mode-buttons"><button class="ai-mode ' + (aiState.level==="standard"?"active":"") + '" data-ai-level="standard">Standard <small>Specialists + mediator</small></button><button class="ai-mode ' + (aiState.level==="deep"?"active":"") + '" data-ai-level="deep">Deep <small>+ specialist counteroffers</small></button></div></div><button class="button button-primary ai-run" data-action data-ai-run ' + (!connected || aiState.loading?"disabled":"") + '>✳ Launch AI negotiation ↗</button></section>' +
+    '<div class="ai-section-head"><strong>Decision lifecycle</strong><span>' + (aiState.level==="deep"?"UP TO 6 GROQ CALLS":"UP TO 4 GROQ CALLS") + '</span></div>' +
+    '<div class="ai-step-grid">' + steps.map(function(s){return '<div class="ai-step"><small>' + s[0] + '</small><strong>' + s[1] + '</strong><span>' + s[2] + '</span></div>';}).join("") + '</div>' +
+    '<div id="ai-live-result">' + result + '</div>' +
+    '<div class="note-banner"><strong>BOUNDARY</strong><span>Only synthetic local CRM data can be committed. Salesforce is not connected. The mediator is advisory and cannot override deterministic policy, consent or the independent verifier.</span></div>';
+  $("#page-crumb").textContent = "AI Agent Lab";
+}
+
+function renderLiveDecision(decision) {
+  const ai = decision.ai_trace || {};
+  const timeline = ai.timeline || [];
+  const meta = '<div class="ai-trace-metrics"><div><small>MODEL CALLS</small><strong>' + number(ai.model_calls) + '</strong></div><div><small>INPUT TOKENS</small><strong>' + number(ai.prompt_tokens) + '</strong></div><div><small>OUTPUT TOKENS</small><strong>' + number(ai.completion_tokens) + '</strong></div><div><small>INFERENCE TIME</small><strong>' + (ai.total_latency_ms/1000 || 0).toFixed(1) + 's</strong></div></div>';
+  const traces = timeline.map(function(t,index) {
+    const phase = ({specialist_proposal:"Independent specialist",mediation:"Negotiation mediator",specialist_counteroffer:"Credit counteroffer"})[t.phase] || t.phase;
+    const details = t.phase==="mediation"
+      ? esc(t.response.negotiation_rationale || t.response.conflict_summary || "")
+      : esc(t.response.rationale || t.response.negotiation_offer || "");
+    const decisionText = t.phase==="specialist_proposal"
+      ? (t.response.decision==="abstain"?"Abstained":esc(t.response.action_type.replace(/_/g," ")))
+      : t.phase==="specialist_counteroffer"?(t.accepted_reduction_mad?money(t.accepted_reduction_mad):"Declined"):"Advisory only";
+    return '<div class="ai-timeline-item"><div class="ai-timeline-number">' + String(index+1).padStart(2,"0") + '</div><div class="ai-timeline-main"><div class="ai-timeline-header"><strong>' + esc(t.agent_name) + '</strong><span>' + esc(phase) + '</span></div><p>' + details + '</p><small>' + esc(t.model) + ' · ' + number(t.usage.total_tokens) + ' tokens · ' + number(t.latency_ms) + ' ms</small></div><span class="ai-timeline-pill">' + decisionText + '</span></div>';
+  }).join("");
+  return '<div class="ai-section-head" style="margin-top:24px"><strong>Verified AI decision</strong><span>' + esc(decision.decision_id || "") + '</span></div>' +
+    meta +
+    '<section class="panel ai-timeline"><div class="panel-header"><div><div class="panel-title">Negotiation trace</div><div class="panel-subtitle">Actual structured model outputs · original evidence preserved</div></div>' + badge(decision.status) + '</div><div class="panel-body">' + traces + '</div></section>' +
+    '<div class="ai-section-head" style="margin-top:20px"><strong>Policy-verified outcome</strong><span>DETERMINISTIC APPROVAL</span></div>' +
+    renderDecisionResult(decision);
+}
+
+async function connectGroq() {
+  const input = $("#groq-key-field");
+  if (!input) return;
+  let secret = input.value.trim();
+  input.value = "";
+  if (!secret || !secret.startsWith("gsk_")) {toast("Enter a valid Groq key.",true);return;}
+  if (state.busy) return;
+  setBusy(true);
+  try {
+    const saved = await api("/api/ai/configure",{method:"POST",body:JSON.stringify({api_key:secret})});
+    if (!saved.configured) throw new Error("The Keychain did not confirm credential storage.");
+    toast("Groq credential saved to macOS Keychain");
+    await renderAgentLab();
+  } catch(e) { toast(e.message,true); }
+  finally {secret = "";setBusy(false);}
+}
+
+async function runGroqNegotiation() {
+  if (state.busy || aiState.loading || !aiState.status || !aiState.status.configured) return;
+  aiState.loading = true;
+  setBusy(true);
+  const target = $("#ai-live-result");
+  if(target)target.innerHTML = '<section class="panel"><div class="loading-state"><div class="loader"></div><span>Running independent specialist inference, mediation and verification…</span></div></section>';
+  try {
+    const result = await api("/api/ai/run",{
+      method:"POST",body:JSON.stringify({scenario_id:aiState.scenario,negotiation:aiState.level})
+    });
+    aiState.decision = result;
+    toast("AI run completed · "+result.status+" · "+result.ai_trace.model_calls+" model calls");
+    await renderAgentLab();
+    const output = $("#ai-live-result");
+    if(output) output.scrollIntoView({behavior:"smooth",block:"start"});
+  } catch(e){
+    toast(e.message,true);
+    if(target)target.innerHTML='<section class="panel"><div class="empty-state">No decision was committed. '+esc(e.message)+'</div></section>';
+  } finally {aiState.loading=false;setBusy(false);}
+}
