@@ -1,51 +1,17 @@
-# TreatyAI Salesforce DX Scaffold
+# TreatyAI Salesforce integration
 
-This folder contains source for a future custom Agentforce Apex action.
+This directory contains the org-tested Apex adapter, a read-only synthetic CRM context action, seed script, active Agent Script source, a clearly marked pending version2 draft, a proposed restricted gateway and sanitized evidence.
 
-## Files
+- [Implementation status](IMPLEMENTATION_STATUS.md): live results and precise limitations.
+- [Demonstration procedure](DEMO_PROCEDURE.md): exact clicks and three tested prompts.
+- [Gateway](gateway/README.md): owner-review proposal, hosting assessment and local tests.
+- [Active version1](agent-source/active-version-1.agent): actual saved Agent Script, not a full Metadata API export.
+- [Pending version2](agent-source/pending-version-2-NOT-SAVED-OR-VALIDATED.agent): source only; blocked browser write, not validated or active.
 
-- sfdx-project.json — Salesforce DX source project definition.
-- force-app/main/default/classes/TreatyAIGovernanceAction.cls — Invocable Apex callout adapter to the TreatyAI decision endpoint.
-- force-app/main/default/classes/TreatyAIGovernanceActionTest.cls — HttpCalloutMock tests for a success path and invalid payload rejection.
-- Matching metadata XML files.
+17 Apex methods passed in the real org:10 adapter tests with mocked HTTP and7 context-reader tests with isolated Salesforce data. Seventeen gateway tests passed locally using a mocked upstream, including temporary loopback HTTP. Three actual Agentforce Preview conversations exercised Service, Retention and Marketing. None of these is a live Salesforce-to-TreatyAI round trip.
 
-## Current status
+Apex uses API68.0. Deployment to another org requires review of class access and metadata dependencies. Do not deploy the pending agent draft blindly. Active version1 deliberately disables the external governance tool with a literal false condition. The backend, its main branch and real business systems remain unchanged.
 
-**Source authored, not compiled, not deployed, not tested in a Salesforce org.**
+Historical request/response JSON under fixtures/ comes from v0.3.0. It is an archived example, not a fresh live result or a payload to replay with its original keys. Review the gateway's approved scenario list and generate a new authorized test batch only when the backend owner is ready.
 
-Do not call this a working Agentforce integration until a real Developer Edition org is connected and the Apex tests pass there.
-
-## Create a free Agentforce Developer Edition
-
-Visit https://developer.salesforce.com/signup and create a Developer Edition with Agentforce and Data 360. Salesforce's current free Developer Edition includes Agentforce and a cloud-hosted Agentforce Vibes IDE, so installing Salesforce CLI locally is not required for the first integration steps.
-
-## Prerequisites for deployment
-
-1. An authorized Agentforce Developer Edition org.
-2. A secured HTTPS deployment of TreatyAI reachable from Salesforce; 127.0.0.1 on your Mac cannot be called by Salesforce cloud.
-3. A Salesforce External Credential and Named Credential named TreatyAI_API.
-4. Strong service authentication, customer authorization and tenant isolation at the TreatyAI gateway.
-5. Real authoritative CRM mapping for contact consent, open cases and compensation allowances.
-6. Review of the Apex action fields and any custom object schema before deployment.
-7. A locked-down, reviewable production policy and external transaction/outbox design.
-
-The existing local endpoint is not authenticated and must never be placed on the public internet unchanged.
-
-## Planned deployment
-
-- Open Agentforce Vibes IDE in the Developer Edition org.
-- Import or upload the source project.
-- Configure the authenticated Named Credential with the API base URL.
-- Validate Apex compilation, execute all Apex tests and inspect code coverage.
-- Add the Invocable Apex method as a custom Agentforce Action.
-- Connect specialist agents to TreatyAI for governance of their proposed decisions.
-- Test full end-to-end round trips, customer-level permissions, retries and rollback.
-
-## Official references
-
-- https://developer.salesforce.com/signup
-- https://developer.salesforce.com/docs/ai/agentforce/guide/agent-invocablemethod.html
-- https://developer.salesforce.com/docs/platform/apex-dev/references/apex-dev/apex-classes-annotation-invocablemethod.html
-- https://developer.salesforce.com/docs/platform/apex-dev/references/apex-dev/apex-callouts.html
-
-Deployment work requires access to the actual Salesforce org.
+Current Salesforce supports source retrieval through AiAuthoringBundle and, at API68, AiAgentDefinition/AiAgentDefinitionVersion. Retrieve the actual version and dependencies when browser review/access becomes available; the files here do not claim a completed metadata export. See [official Salesforce metadata guidance](https://developer.salesforce.com/blogs/2026/11/agentforce-metadata-types-in-winter-27-dive-into-aiagentdefinition).
