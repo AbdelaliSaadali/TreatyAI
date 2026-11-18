@@ -1,0 +1,407 @@
+{
+  "scenario_id": "salesforce-partner-example",
+  "customer_id": "C-1042",
+  "customer_name": "Nadia El Amrani",
+  "policy_version": "treatyai-policy-1.0.0",
+  "engine_version": "treatyai-engine-0.1.0",
+  "status": "committed",
+  "created_at": "2026-11-17T17:13:32.087509+00:00",
+  "customer_snapshot": {
+    "id": "C-1042",
+    "name": "Nadia El Amrani",
+    "segment": "Premium",
+    "remaining_budget_mad": 150.0,
+    "marketing_consent": true,
+    "open_critical_case": true,
+    "communications_last_24h": 0,
+    "max_communications_per_24h": 1,
+    "state_version": 1,
+    "updated_at": "2026-11-17T17:13:32.083275+00:00"
+  },
+  "proposals": [
+    {
+      "proposal_id": "PROP-SVC-100",
+      "idempotency_key": "idem-PROP-SVC-100-20261117171332085609",
+      "agent_id": "service-agent",
+      "customer_id": "C-1042",
+      "action_type": "issue_credit",
+      "amount_mad": 100.0,
+      "channel": "none",
+      "priority": 1,
+      "utility": 96,
+      "allow_partial": true,
+      "reversible": true,
+      "requires_human": false,
+      "proposed_at": "2026-11-17T17:13:32.085609Z",
+      "expires_at": null,
+      "expected_state_version": 1,
+      "evidence": [
+        "case:CS-778",
+        "policy:COMPENSATION-V4"
+      ],
+      "rationale": "Compensate the customer for a verified billing disruption.",
+      "context_note": "Case CS-778 is open and marked high priority."
+    },
+    {
+      "proposal_id": "PROP-RET-100",
+      "idempotency_key": "idem-PROP-RET-100-20261117171332085673",
+      "agent_id": "retention-agent",
+      "customer_id": "C-1042",
+      "action_type": "issue_credit",
+      "amount_mad": 100.0,
+      "channel": "none",
+      "priority": 2,
+      "utility": 76,
+      "allow_partial": true,
+      "reversible": true,
+      "requires_human": false,
+      "proposed_at": "2026-11-17T17:13:32.085673Z",
+      "expires_at": null,
+      "expected_state_version": 1,
+      "evidence": [
+        "model:CHURN-RISK-2026-11",
+        "policy:RETENTION-V2"
+      ],
+      "rationale": "Offer a retention credit to reduce churn risk.",
+      "context_note": "Retention model predicts elevated churn risk."
+    },
+    {
+      "proposal_id": "PROP-MKT-EMAIL",
+      "idempotency_key": "idem-PROP-MKT-EMAIL-20261117171332085698",
+      "agent_id": "marketing-agent",
+      "customer_id": "C-1042",
+      "action_type": "send_marketing",
+      "amount_mad": 0.0,
+      "channel": "email",
+      "priority": 4,
+      "utility": 58,
+      "allow_partial": false,
+      "reversible": true,
+      "requires_human": false,
+      "proposed_at": "2026-11-17T17:13:32.085698Z",
+      "expires_at": null,
+      "expected_state_version": 1,
+      "evidence": [
+        "campaign:AUTUMN-WINBACK-07",
+        "consent:CRM-1042"
+      ],
+      "rationale": "Send a personalized 20% promotional offer.",
+      "context_note": "Campaign autumn-winback-07 selected this customer."
+    }
+  ],
+  "conflict_graph": {
+    "nodes": [
+      {
+        "id": "PROP-SVC-100",
+        "agent": "Service Agent",
+        "action": "issue_credit",
+        "label": "Issue Credit",
+        "amount_mad": 100.0,
+        "priority": 1
+      },
+      {
+        "id": "PROP-RET-100",
+        "agent": "Retention Agent",
+        "action": "issue_credit",
+        "label": "Issue Credit",
+        "amount_mad": 100.0,
+        "priority": 2
+      },
+      {
+        "id": "PROP-MKT-EMAIL",
+        "agent": "Marketing Agent",
+        "action": "send_marketing",
+        "label": "Send Marketing",
+        "amount_mad": 0.0,
+        "priority": 4
+      }
+    ],
+    "edges": [
+      {
+        "source": "PROP-SVC-100",
+        "target": "PROP-RET-100",
+        "type": "shared_budget",
+        "severity": "critical",
+        "label": "Global compensation contention",
+        "detail": "All credit agents request 200 MAD against 150 MAD available."
+      },
+      {
+        "source": "PROP-SVC-100",
+        "target": "PROP-MKT-EMAIL",
+        "type": "temporal_precedence",
+        "severity": "high",
+        "label": "Customer journey precedence",
+        "detail": "Promotional outreach must wait until the critical customer issue is resolved."
+      },
+      {
+        "source": "PROP-RET-100",
+        "target": "PROP-MKT-EMAIL",
+        "type": "temporal_precedence",
+        "severity": "high",
+        "label": "Customer journey precedence",
+        "detail": "Promotional outreach must wait until the critical customer issue is resolved."
+      }
+    ]
+  },
+  "plan": {
+    "selected": [
+      {
+        "proposal_id": "PROP-SVC-100",
+        "action_type": "issue_credit",
+        "amount_mad": 100.0,
+        "utility": 96,
+        "adjusted": false
+      },
+      {
+        "proposal_id": "PROP-RET-100",
+        "action_type": "issue_credit",
+        "amount_mad": 50.0,
+        "utility": 34,
+        "adjusted": true
+      }
+    ],
+    "outcomes": [
+      {
+        "proposal_id": "PROP-SVC-100",
+        "agent_id": "service-agent",
+        "agent_name": "Service Agent",
+        "action_type": "issue_credit",
+        "original_amount_mad": 100.0,
+        "approved_amount_mad": 100.0,
+        "status": "approved",
+        "reason_codes": [
+          "POLICY_CHECKS_PASSED"
+        ],
+        "rationale": "Approved by policy and global constraint verification.",
+        "utility": 96,
+        "evidence": [
+          "case:CS-778",
+          "policy:COMPENSATION-V4"
+        ]
+      },
+      {
+        "proposal_id": "PROP-RET-100",
+        "agent_id": "retention-agent",
+        "agent_name": "Retention Agent",
+        "action_type": "issue_credit",
+        "original_amount_mad": 100.0,
+        "approved_amount_mad": 50.0,
+        "status": "adjusted",
+        "reason_codes": [
+          "PARTIAL_RESOLUTION"
+        ],
+        "rationale": "Approved 50 MAD after global optimization.",
+        "utility": 34,
+        "evidence": [
+          "model:CHURN-RISK-2026-11",
+          "policy:RETENTION-V2"
+        ]
+      },
+      {
+        "proposal_id": "PROP-MKT-EMAIL",
+        "agent_id": "marketing-agent",
+        "agent_name": "Marketing Agent",
+        "action_type": "send_marketing",
+        "original_amount_mad": 0.0,
+        "approved_amount_mad": 0,
+        "status": "deferred",
+        "reason_codes": [
+          "OPEN_CRITICAL_CASE"
+        ],
+        "rationale": "Promotional contact deferred until the open critical case is resolved.",
+        "utility": 0,
+        "evidence": [
+          "campaign:AUTUMN-WINBACK-07",
+          "consent:CRM-1042"
+        ]
+      }
+    ],
+    "total_compensation_mad": 150.0,
+    "outbound_actions": 0,
+    "objective_score": 130,
+    "blocked": {
+      "PROP-MKT-EMAIL": [
+        "OPEN_CRITICAL_CASE",
+        "deferred"
+      ]
+    }
+  },
+  "verification": {
+    "passed": true,
+    "checks": [
+      {
+        "id": "plan_integrity",
+        "label": "Independent plan consistency",
+        "passed": true,
+        "detail": "Selected actions, amount variants, totals, utility and outcome records match the contracts."
+      },
+      {
+        "id": "delegated_authority",
+        "label": "Delegated authority",
+        "passed": true,
+        "detail": "Every selected action is within its registered scope and requires no human approval."
+      },
+      {
+        "id": "global_budget",
+        "label": "Global compensation budget",
+        "passed": true,
+        "detail": "150 / 150 MAD allocated."
+      },
+      {
+        "id": "contact_limit",
+        "label": "Contact-frequency limit",
+        "passed": true,
+        "detail": "0 / 1 outbound actions."
+      },
+      {
+        "id": "consent_and_journey",
+        "label": "Consent & journey precedence",
+        "passed": true,
+        "detail": "No marketing action overrides consent or open-case suppression."
+      },
+      {
+        "id": "idempotency",
+        "label": "Unique execution keys",
+        "passed": true,
+        "detail": "Selected actions have distinct execution keys."
+      }
+    ],
+    "verified_compensation_mad": 150.0,
+    "verified_outbound_actions": 0,
+    "verifier": "TreatyAI Independent Verifier v0.2"
+  },
+  "summary": {
+    "proposals": 3,
+    "conflicts": 3,
+    "approved": 1,
+    "adjusted": 1,
+    "deferred": 1,
+    "rejected": 0,
+    "compensation_mad": 150.0,
+    "objective_score": 130
+  },
+  "state_revalidation": {
+    "snapshot_version": 1,
+    "stale_proposals_revalidated": [],
+    "revalidated": false,
+    "detail": "All proposals referenced the current customer state version."
+  },
+  "state_version_after": 2,
+  "decision_id": "DEC-0DC329C431",
+  "receipt": {
+    "decision_id": "DEC-0DC329C431",
+    "scenario_id": "salesforce-partner-example",
+    "customer_id": "C-1042",
+    "status": "committed",
+    "policy_version": "treatyai-policy-1.0.0",
+    "engine_version": "treatyai-engine-0.1.0",
+    "ai_trace_hash": null,
+    "state_version_before": 1,
+    "state_version_after": 2,
+    "stale_proposals_revalidated": [],
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "plan_integrity",
+          "label": "Independent plan consistency",
+          "passed": true,
+          "detail": "Selected actions, amount variants, totals, utility and outcome records match the contracts."
+        },
+        {
+          "id": "delegated_authority",
+          "label": "Delegated authority",
+          "passed": true,
+          "detail": "Every selected action is within its registered scope and requires no human approval."
+        },
+        {
+          "id": "global_budget",
+          "label": "Global compensation budget",
+          "passed": true,
+          "detail": "150 / 150 MAD allocated."
+        },
+        {
+          "id": "contact_limit",
+          "label": "Contact-frequency limit",
+          "passed": true,
+          "detail": "0 / 1 outbound actions."
+        },
+        {
+          "id": "consent_and_journey",
+          "label": "Consent & journey precedence",
+          "passed": true,
+          "detail": "No marketing action overrides consent or open-case suppression."
+        },
+        {
+          "id": "idempotency",
+          "label": "Unique execution keys",
+          "passed": true,
+          "detail": "Selected actions have distinct execution keys."
+        }
+      ],
+      "verified_compensation_mad": 150.0,
+      "verified_outbound_actions": 0,
+      "verifier": "TreatyAI Independent Verifier v0.2"
+    },
+    "outcomes": [
+      {
+        "proposal_id": "PROP-SVC-100",
+        "agent_id": "service-agent",
+        "agent_name": "Service Agent",
+        "action_type": "issue_credit",
+        "original_amount_mad": 100.0,
+        "approved_amount_mad": 100.0,
+        "status": "approved",
+        "reason_codes": [
+          "POLICY_CHECKS_PASSED"
+        ],
+        "rationale": "Approved by policy and global constraint verification.",
+        "utility": 96,
+        "evidence": [
+          "case:CS-778",
+          "policy:COMPENSATION-V4"
+        ]
+      },
+      {
+        "proposal_id": "PROP-RET-100",
+        "agent_id": "retention-agent",
+        "agent_name": "Retention Agent",
+        "action_type": "issue_credit",
+        "original_amount_mad": 100.0,
+        "approved_amount_mad": 50.0,
+        "status": "adjusted",
+        "reason_codes": [
+          "PARTIAL_RESOLUTION"
+        ],
+        "rationale": "Approved 50 MAD after global optimization.",
+        "utility": 34,
+        "evidence": [
+          "model:CHURN-RISK-2026-11",
+          "policy:RETENTION-V2"
+        ]
+      },
+      {
+        "proposal_id": "PROP-MKT-EMAIL",
+        "agent_id": "marketing-agent",
+        "agent_name": "Marketing Agent",
+        "action_type": "send_marketing",
+        "original_amount_mad": 0.0,
+        "approved_amount_mad": 0,
+        "status": "deferred",
+        "reason_codes": [
+          "OPEN_CRITICAL_CASE"
+        ],
+        "rationale": "Promotional contact deferred until the open critical case is resolved.",
+        "utility": 0,
+        "evidence": [
+          "campaign:AUTUMN-WINBACK-07",
+          "consent:CRM-1042"
+        ]
+      }
+    ],
+    "total_compensation_mad": 150.0,
+    "created_at": "2026-11-17T17:13:32.087509+00:00",
+    "previous_event_hash": "GENESIS",
+    "receipt_hash": "7829a2d96477cc2b38651d8e97bd540c96b9e82e0dcbf791f46451fdec41db2b"
+  }
+}

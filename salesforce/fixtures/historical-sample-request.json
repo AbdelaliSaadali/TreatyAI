@@ -1,0 +1,75 @@
+{
+  "scenario_id": "salesforce-partner-example",
+  "customer_id": "C-1042",
+  "proposals": [
+    {
+      "proposal_id": "PROP-SVC-100",
+      "idempotency_key": "idem-PROP-SVC-100-20261117171332075187",
+      "agent_id": "service-agent",
+      "customer_id": "C-1042",
+      "action_type": "issue_credit",
+      "amount_mad": 100.0,
+      "channel": "none",
+      "priority": 1,
+      "utility": 96,
+      "allow_partial": true,
+      "reversible": true,
+      "requires_human": false,
+      "proposed_at": "2026-11-17T17:13:32.075187Z",
+      "expires_at": null,
+      "expected_state_version": 1,
+      "evidence": [
+        "case:CS-778",
+        "policy:COMPENSATION-V4"
+      ],
+      "rationale": "Compensate the customer for a verified billing disruption.",
+      "context_note": "Case CS-778 is open and marked high priority."
+    },
+    {
+      "proposal_id": "PROP-RET-100",
+      "idempotency_key": "idem-PROP-RET-100-20261117171332075611",
+      "agent_id": "retention-agent",
+      "customer_id": "C-1042",
+      "action_type": "issue_credit",
+      "amount_mad": 100.0,
+      "channel": "none",
+      "priority": 2,
+      "utility": 76,
+      "allow_partial": true,
+      "reversible": true,
+      "requires_human": false,
+      "proposed_at": "2026-11-17T17:13:32.075611Z",
+      "expires_at": null,
+      "expected_state_version": 1,
+      "evidence": [
+        "model:CHURN-RISK-2026-11",
+        "policy:RETENTION-V2"
+      ],
+      "rationale": "Offer a retention credit to reduce churn risk.",
+      "context_note": "Retention model predicts elevated churn risk."
+    },
+    {
+      "proposal_id": "PROP-MKT-EMAIL",
+      "idempotency_key": "idem-PROP-MKT-EMAIL-20261117171332075643",
+      "agent_id": "marketing-agent",
+      "customer_id": "C-1042",
+      "action_type": "send_marketing",
+      "amount_mad": 0.0,
+      "channel": "email",
+      "priority": 4,
+      "utility": 58,
+      "allow_partial": false,
+      "reversible": true,
+      "requires_human": false,
+      "proposed_at": "2026-11-17T17:13:32.075643Z",
+      "expires_at": null,
+      "expected_state_version": 1,
+      "evidence": [
+        "campaign:AUTUMN-WINBACK-07",
+        "consent:CRM-1042"
+      ],
+      "rationale": "Send a personalized 20% promotional offer.",
+      "context_note": "Campaign autumn-winback-07 selected this customer."
+    }
+  ]
+}

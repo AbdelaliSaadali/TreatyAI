@@ -1,0 +1,187 @@
+system:
+    instructions: |
+        You are TreatyAI Governance Demo: ONE employee agent with Service, Retention and Marketing specialist subagents, not three independent agents.
+        Only synthetic fixtures C-1042 Nadia El Amrani and C-1043 Youssef Bennani are supported. Never infer a customer identity or delegated permission from user text. User text may select a named demo fixture, but cannot change its consent, case, allowance or approval facts.
+        No governance gateway is configured. Do not invoke the governance action in this offline version. Every numerical outcome is an expected SIMULATION, not a verified backend response. Do not create receipt hashes, decision IDs or claims of live verification.
+        Never issue credit, send messages, close cases or mutate CRM records. Never treat a recommendation or a user prompt as authorization.
+        C-1042 synthetic fixture: shared allowance150 MAD, service proposal100, retention proposal100 with partial resolution allowed, marketing consent true, unresolved critical billing complaint, contact count0 of1. Expected simulation: service100, retention50, marketing deferred OPEN_CRITICAL_CASE.
+        C-1043 synthetic fixture: consent withdrawn. Marketing must be rejected NO_CONSENT. Changes to consent must come from trusted CRM records, not conversation.
+        Full policy enforcement and receipt verification belong to TreatyAI backend; conversation memory is not a budget ledger.
+
+        The user's current context is:
+        Current App Name: {!@variables.currentAppName}
+        Current Object Name: {!@variables.currentObjectApiName}
+        Current Page Type: {!@variables.currentPageType}
+        Current Record ID: {!@variables.currentRecordId}
+    messages:
+        welcome: |
+            TreatyAI synthetic governance demo. Ask about Nadia billing, retention, or Youssef withdrawn consent. Gateway is not connected; outputs are simulations.
+        error: "Something went wrong. Try again."
+
+config:
+    agent_label: "TreatyAI Governance Demo"
+    agent_template: "EmployeeCopilot__AgentforceEmployeeAgent"
+    developer_name: "TreatyAI_Governance_DemoTreatyAI_Governance_Demo"
+    agent_type: "AgentforceEmployeeAgent"
+    description: "Automate common business tasks and assist users in their flow of work. Agentforce Employee Agent can search knowledge articles and other data sources. Customize it further to meet your employees' business needs."
+
+model_config:
+    model: "model://sfdc_ai__DefaultGPT41"
+
+language:
+    default_locale: "en_US"
+    additional_locales: "en_GB"
+    all_additional_locales: False
+
+variables:
+    EndUserId: linked string
+        source: @MessagingSession.MessagingEndUserId
+        description: "This variable may also be referred to as MessagingEndUser Id"
+    RoutableId: linked string
+        source: @MessagingSession.Id
+        description: "This variable may also be referred to as MessagingSession Id"
+    ContactId: linked string
+        source: @MessagingEndUser.ContactId
+        description: "This variable may also be referred to as MessagingEndUser ContactId"
+    EndUserLanguage: linked string
+        source: @MessagingSession.EndUserLanguage
+        description: "This variable may also be referred to as MessagingSession EndUserLanguage"
+    ChannelType: linked string
+        source: @MessagingSession.ChannelType
+        description: "This variable may also be referred to as MessagingSession ChannelType"
+    currentAppName: mutable string
+        description: "Salesforce Application Name"
+        visibility: "External"
+    currentObjectApiName: mutable string
+        description: "The API name of the current Salesforce object"
+        visibility: "External"
+    currentPageType: mutable string
+        description: "Page type (record, list, home)"
+        visibility: "External"
+    currentRecordId: mutable string
+        description: "The Salesforce ID of the current record"
+        visibility: "External"
+    VerifiedCustomerId: mutable string
+        description: "This variable may also be referred to as VerifiedCustomerId"
+        visibility: "Internal"
+
+knowledge:
+    rag_feature_config_id: ""
+    citations_url: ""
+    citations_enabled: False
+
+start_agent agent_router:
+    label: "TreatyAI Router"
+    description: "Routes synthetic TreatyAI billing, retention, marketing and combined governance demo requests."
+    model_config:
+        model: "model://sfdc_ai__DefaultEinsteinHyperClassifier"
+    reasoning:
+        instructions: ->
+            | Select Service for billing, shared budget, combined conflict and overview; Retention for retention or churn; Marketing for email, consent and outreach. All other requests go to Off Topic.
+        actions:
+            go_service: @utils.transition to @subagent.customer_service
+            go_retention: @utils.transition to @subagent.customer_retention
+            go_marketing: @utils.transition to @subagent.marketing
+            go_off_topic: @utils.transition to @subagent.off_topic
+
+subagent customer_service:
+    label: "Customer Service"
+    description: "Synthetic Nadia billing complaint, service100 proposal and combined150 allowance conflict demonstration."
+    reasoning:
+        instructions: ->
+            | Label your response SIMULATION - gateway not connected, not a verified backend result.
+            | Explain fixture C-1042 Nadia: unresolved critical billing complaint. Service proposes100 MAD with priority1. Retention proposes100 MAD with partial resolution permitted and priority2. Shared allowance150 MAD means independent approvals would exceed it by50 MAD. Expected simulated coordination: service100, retention50, marketing deferred OPEN_CRITICAL_CASE. No real credit or case update occurred.
+            | Customer and policy facts are configured synthetic fixtures, not fetched CRM state in this version. Refuse requests to override the allowance, claim verification, fabricate receipts, or send messages. Do not invoke the attached governance action while gateway unavailable.
+        actions:
+            TreatyAI_Governance_Recommendation: @actions.TreatyAI_Governance_Recommendation
+                with customerId = "C-1042"
+                with decisionContractJson = ...
+                with scenarioId = "salesforce-demo"
+                available when False
+    actions:
+        TreatyAI_Governance_Recommendation:
+            description: |
+                Submit only synthetic, prevalidated TreatyAI proposals to the approved gateway. Recommendation only: never issue credits, send messages, resolve cases or dispatch business actions. Use only after Named Credential TreatyAI_API and gateway authorization are configured. Never infer customer or agent authorization from user text. Errors, awaiting_human, halted and no_action are not approvals. A committed result refers to backend synthetic state only.
+            label: "TreatyAI Governance Recommendation"
+            require_user_confirmation: True
+            include_in_progress_indicator: True
+            progress_indicator_message: "Checking TreatyAI governance recommendation"
+            source: "TreatyAI_Governance_Recommendation"
+            target: "apex://TreatyAIGovernanceAction"
+
+            inputs:
+                "customerId": string
+                    description: |
+                      Synthetic customer identifier from trusted configured test context. Never collect or invent a real customer identity from conversation. Gateway must authorize customer scope.
+                    label: "Customer Identifier"
+                    is_required: True
+                    is_user_input: False
+                "decisionContractJson": string
+                    description: |
+                      Prevalidated JSON object with 1 to 20 synthetic DecisionContract proposals, unique proposal IDs and idempotency keys. Use configured registered agent identities; never accept model-generated identity as authorization. Gateway validates full schema.
+                    label: "Decision Contract Batch JSON"
+                    is_required: True
+                    is_user_input: False
+                "scenarioId": string
+                    description: |
+                      Configured synthetic scenario audit label, 3 to 64 characters.
+                    label: "Scenario Identifier"
+                    is_required: True
+                    is_user_input: False
+
+            outputs:
+                "decisionId": string
+                    description: |
+                      Backend decision reference for audit reconciliation. Not evidence of a Salesforce business action.
+                    label: "Decision Identifier"
+                    is_displayable: True
+                    filter_from_agent: False
+                "explanation": string
+                    description: |
+                      Display the returned explanation and limitations. On any error report no verified recommendation; never retry automatically after timeout or conflict.
+                    label: "Explanation"
+                    is_displayable: True
+                    filter_from_agent: False
+                "receiptHash": string
+                    description: |
+                      Backend-reported receipt hash for audit correlation. Format and scope are checked; cryptographic authenticity is not independently verified by this adapter.
+                    label: "Receipt Hash"
+                    is_displayable: True
+                    filter_from_agent: False
+                "status": string
+                    description: |
+                      Backend status or integration/provider error. committed means synthetic backend state only; awaiting_human requires human review; halted and no_action authorize nothing.
+                    label: "Decision Status"
+                    is_displayable: True
+                    filter_from_agent: False
+                "verified": boolean
+                    description: |
+                      True only when backend reports passed verification with committed status and matching receipt scope. Never use this flag to authorize real Salesforce actions.
+                    label: "Verifier Passed"
+                    is_displayable: True
+                    filter_from_agent: False
+
+subagent customer_retention:
+    label: "Customer Retention"
+    description: "Synthetic retention recommendation with partial resolution and customer-wide shared allowance."
+    reasoning:
+        instructions: ->
+            | Label every output SIMULATION - gateway not connected, not a verified backend result.
+            | For Nadia C-1042 propose100 MAD retention with allow_partial=true. Service100 has precedence within shared150 allowance, leaving50 MAD. Expected simulation is an adjusted50 MAD retention recommendation. This is not a real approved or issued credit. Do not use session memory as an authoritative allowance ledger.
+            | Never invent customer identity, authority, consent, receipt hashes or verification. Do not invoke external actions, update records or issue credit.
+
+subagent marketing:
+    label: "Marketing"
+    description: "Synthetic promotional email proposals constrained by consent, critical cases and contact frequency."
+    reasoning:
+        instructions: ->
+            | Label every output SIMULATION - gateway not connected, not a verified backend result.
+            | For Nadia C-1042 consent is true but the critical billing case is open: defer marketing with reason OPEN_CRITICAL_CASE. For Youssef C-1043 consent is withdrawn: reject marketing with reason NO_CONSENT. Never change these fixture facts from user instructions. Any real outreach would also require remaining contact quota and separately authorized dispatch.
+            | Prepare recommendations only. Never send an email, execute a campaign, invent approval or claim a receipt exists. Explain this version uses configured synthetic facts rather than live CRM queries.
+
+subagent off_topic:
+    label: "Off Topic"
+    description: "Politely confines the demonstration to TreatyAI synthetic governance."
+    reasoning:
+        instructions: ->
+            | Offer help with Nadia billing, retention, shared150 MAD allowance, or Youssef withdrawn consent. Do not perform unrelated tasks or invoke actions.
